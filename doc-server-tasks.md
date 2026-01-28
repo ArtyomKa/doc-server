@@ -1,0 +1,233 @@
+# doc-server Task Tracker
+
+## Project Status: Planning Complete ✅
+- [x] Product specification review
+- [x] Implementation plan creation
+- [x] Task breakdown and prioritization
+
+---
+
+## Phase 1: Core Infrastructure Setup (Priority: High)
+
+### 1.1 Project Structure Setup
+- [ ] Create main project directory structure
+- [ ] Initialize `pyproject.toml` with project metadata
+- [ ] Set up `requirements.txt` with core dependencies
+- [ ] Create basic `__init__.py` files for all modules
+- [ ] Set up development environment configuration
+
+### 1.2 Dependencies & Environment
+- [ ] Install FastMCP for MCP server framework
+- [ ] Add sentence-transformers for embeddings
+- [ ] Add ChromaDB for vector storage
+- [ ] Add GitPython for git operations
+- [ ] Add pathspec for .gitignore parsing
+- [ ] Add click for CLI interface
+- [ ] Add pydantic for data models
+- [ ] Set up development dependencies (pytest, black, flake8)
+
+### 1.3 Configuration System
+- [ ] Create `config.py` with settings management
+- [ ] Implement environment-based configuration loading
+- [ ] Set up default storage paths (`~/.doc-server/`)
+- [ ] Create configuration validation
+- [ ] Add configuration documentation
+
+---
+
+## Phase 2: Ingestion System (Priority: High)
+
+### 2.1 Git Cloner Module
+- [ ] Implement `git_cloner.py` with shallow clone functionality
+- [ ] Add repository metadata extraction
+- [ ] Implement error handling for invalid URLs
+- [ ] Add cleanup utilities for temporary clones
+- [ ] Write unit tests for git operations
+
+### 2.2 ZIP Extractor Module
+- [ ] Implement `zip_extractor.py` with secure extraction
+- [ ] Add path traversal protection
+- [ ] Extract archive metadata
+- [ ] Handle password-protected ZIPs (optional)
+- [ ] Write unit tests for ZIP operations
+
+### 2.3 File Filter Module
+- [ ] Implement `file_filter.py` with .gitignore parsing
+- [ ] Add allowlist enforcement for file types
+- [ ] Implement file size guard (>1MB)
+- [ ] Add binary file detection (null bytes)
+- [ ] Write comprehensive tests for filtering logic
+
+### 2.4 Document Processor Module
+- [ ] Implement `document_processor.py` with metadata headers
+- [ ] Add content chunking for large files
+- [ ] Preserve file paths and line numbers
+- [ ] Optimize for embedding generation
+- [ ] Write tests for document formatting
+
+---
+
+## Phase 3: Search Infrastructure (Priority: High)
+
+### 3.1 Embedding Service
+- [ ] Implement `embedding_service.py` with all-MiniLM-L6-v2
+- [ ] Add batch embedding processing
+- [ ] Implement embedding caching system
+- [ ] Add model warmup on startup
+- [ ] Write performance tests for embedding generation
+
+### 3.2 Vector Store Module
+- [ ] Implement `vector_store.py` with ChromaDB integration
+- [ ] Add collection management by library ID
+- [ ] Configure persistent storage
+- [ ] Implement index management utilities
+- [ ] Write tests for storage operations
+
+### 3.3 Hybrid Search Module
+- [ ] Implement `hybrid_search.py` with vector similarity
+- [ ] Add keyword boost for exact terms
+- [ ] Implement result ranking algorithm
+- [ ] Add metadata enrichment (scores, line numbers)
+- [ ] Write tests for search accuracy
+
+---
+
+## Phase 4: MCP Server Implementation (Priority: High)
+
+### 4.1 Core MCP Server
+- [ ] Create `mcp_server.py` with FastMCP setup
+- [ ] Implement `search_docs(query, library_id)` tool
+- [ ] Add STDIO transport configuration
+- [ ] Implement proper error handling and logging
+- [ ] Add graceful shutdown handling
+
+### 4.2 Library Management Tools
+- [ ] Implement `ingest_library(source, library_id)` tool
+- [ ] Implement `list_libraries()` tool
+- [ ] Implement `remove_library(library_id)` tool
+- [ ] Add input validation and sanitization
+- [ ] Write MCP protocol compliance tests
+
+### 4.3 Server Configuration
+- [ ] Configure logging for debugging
+- [ ] Add startup validation checks
+- [ ] Implement health check endpoint
+- [ ] Add performance monitoring hooks
+- [ ] Test with different MCP clients
+
+---
+
+## Phase 5: CLI Interface (Priority: Medium)
+
+### 5.1 Command Line Interface
+- [ ] Implement CLI entry point with Click
+- [ ] Add `ingest` command with options
+- [ ] Add `search` command with query parameters
+- [ ] Add `list` command for library enumeration
+- [ ] Add `remove` command for library deletion
+- [ ] Add `serve` command for starting MCP server
+
+### 5.2 User Experience
+- [ ] Add progress bars for long operations
+- [ ] Format search results for terminal display
+- [ ] Add colored output and formatting
+- [ ] Implement helpful error messages
+- [ ] Add command validation and help text
+
+---
+
+## Phase 6: Testing & Validation (Priority: Medium)
+
+### 6.1 Unit Test Suite
+- [ ] Write tests for ingestion components
+- [ ] Write tests for search functionality
+- [ ] Write tests for MCP tool validation
+- [ ] Write tests for file filtering logic
+- [ ] Achieve >90% code coverage
+
+### 6.2 Integration Tests
+- [ ] Test end-to-end ingestion flow
+- [ ] Validate search accuracy on sample docs
+- [ ] Test with popular libraries (pandas, fastapi)
+- [ ] Performance benchmarking
+- [ ] Test error scenarios and edge cases
+
+### 6.3 Test Infrastructure
+- [ ] Set up pytest configuration
+- [ ] Create test data fixtures
+- [ ] Add sample repositories for testing
+- [ ] Set up continuous integration
+- [ ] Document test running procedures
+
+---
+
+## Phase 7: Documentation & Examples (Priority: Low)
+
+### 7.1 User Documentation
+- [ ] Write README with installation guide
+- [ ] Create usage examples and tutorials
+- [ ] Document configuration options
+- [ ] Add troubleshooting guide
+- [ ] Create quick start guide
+
+### 7.2 Developer Documentation
+- [ ] Write API reference documentation
+- [ ] Document architecture and design decisions
+- [ ] Create contributing guidelines
+- [ ] Document extension points and plugins
+- [ ] Add code examples for common use cases
+
+---
+
+## MVP Definition (Critical Path)
+
+**Core MVP includes**: Phases 1-4, basic CLI (5.1), minimal tests (6.1)
+
+**Stretch MVP includes**: All phases except advanced documentation
+
+**Release-ready**: All phases complete
+
+---
+
+## Progress Tracking
+
+### Current Status
+- **Phase 1**: 0/9 tasks complete
+- **Phase 2**: 0/16 tasks complete  
+- **Phase 3**: 0/15 tasks complete
+- **Phase 4**: 0/9 tasks complete
+- **Phase 5**: 0/11 tasks complete
+- **Phase 6**: 0/12 tasks complete
+- **Phase 7**: 0/10 tasks complete
+
+**Overall Progress**: 0/82 tasks complete (0%)
+
+---
+
+## Dependencies & Blockers
+
+### External Dependencies
+- [ ] Verify FastMCP compatibility with Python 3.10+
+- [ ] Confirm sentence-transformers model availability
+- [ ] Test ChromaDB performance with expected data sizes
+
+### Technical Blockers
+- [ ] None identified yet
+
+---
+
+## Next Immediate Tasks (This Week)
+
+1. **Setup Phase 1** - Create project structure and install dependencies
+2. **Start Phase 2** - Implement file filtering and git cloner
+3. **Test Ingestion** - Validate file processing pipeline
+4. **Begin Phase 3** - Implement embedding service and vector store
+
+---
+
+## Notes & Decisions
+
+- Priority is given to working MVP over comprehensive testing
+- CLI interface is secondary to MCP functionality
+- Performance optimization should be deferred until after MVP
+- Documentation should be written alongside implementation, not after
