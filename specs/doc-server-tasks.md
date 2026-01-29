@@ -1,20 +1,25 @@
 # doc-server Task Tracker
 
+## Scope Decisions
+- **CLI Interface (Phase 5)**: ❌ OUT OF SCOPE per product spec - only MCP server with STDIO transport required
+- **Entry Points**: Single entry point `doc-server = "doc_server.mcp_server:main"` (no CLI entry point)
+
 ## Project Status: Planning Complete ✅
 - [x] Product specification review
 - [x] Implementation plan creation
 - [x] Task breakdown and prioritization
+- [x] Scope alignment verification
 
 ---
 
 ## Phase 1: Core Infrastructure Setup (Priority: High)
 
 ### 1.1 Project Structure Setup
-- [ ] Create main project directory structure
-- [ ] Initialize `pyproject.toml` with project metadata
-- [ ] Set up `requirements.txt` with core dependencies
-- [ ] Create basic `__init__.py` files for all modules
-- [ ] Set up development environment configuration
+- [x] Create main project directory structure
+- [x] Initialize `pyproject.toml` with project metadata
+- [x] Set up `requirements.txt` with core dependencies
+- [x] Create basic `__init__.py` files for all modules
+- [x] Set up development environment configuration
 
 ### 1.2 Dependencies & Environment
 - [ ] Install FastMCP for MCP server framework
@@ -22,7 +27,6 @@
 - [ ] Add ChromaDB for vector storage
 - [ ] Add GitPython for git operations
 - [ ] Add pathspec for .gitignore parsing
-- [ ] Add click for CLI interface
 - [ ] Add pydantic for data models
 - [ ] Set up development dependencies (pytest, black, flake8)
 
@@ -117,7 +121,7 @@
 
 ---
 
-## Phase 5: CLI Interface (Priority: Medium)
+## Phase 5: CLI Interface (Priority: Medium) ❌ OUT OF SCOPE
 
 ### 5.1 Command Line Interface
 - [ ] Implement CLI entry point with Click
@@ -133,6 +137,8 @@
 - [ ] Add colored output and formatting
 - [ ] Implement helpful error messages
 - [ ] Add command validation and help text
+
+**Note**: CLI interface excluded per product spec - only MCP server required.
 
 ---
 
@@ -181,26 +187,26 @@
 
 ## MVP Definition (Critical Path)
 
-**Core MVP includes**: Phases 1-4, basic CLI (5.1), minimal tests (6.1)
+**Core MVP includes**: Phases 1-4, minimal tests (6.1)
 
-**Stretch MVP includes**: All phases except advanced documentation
+**Stretch MVP includes**: All phases except advanced documentation and CLI (Phase 5 - OUT OF SCOPE)
 
-**Release-ready**: All phases complete
+**Release-ready**: All phases complete (excluding Phase 5)
 
 ---
 
 ## Progress Tracking
 
 ### Current Status
-- **Phase 1**: 0/9 tasks complete
-- **Phase 2**: 0/16 tasks complete  
+- **Phase 1**: 5/17 tasks complete (1.1 ✅ complete, 1.2 incomplete, 1.3 incomplete)
+- **Phase 2**: 0/16 tasks complete
 - **Phase 3**: 0/15 tasks complete
 - **Phase 4**: 0/9 tasks complete
-- **Phase 5**: 0/11 tasks complete
+- **Phase 5**: OUT OF SCOPE (per product spec)
 - **Phase 6**: 0/12 tasks complete
 - **Phase 7**: 0/10 tasks complete
 
-**Overall Progress**: 0/82 tasks complete (0%)
+**Overall Progress**: 5/69 tasks complete (7%)
 
 ---
 

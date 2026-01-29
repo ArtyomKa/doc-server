@@ -1,0 +1,3 @@
+"""
+Main MCP server implementation.
+"""

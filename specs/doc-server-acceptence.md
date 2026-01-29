@@ -22,8 +22,16 @@ This document provides comprehensive acceptance criteria and test specifications
 #### 1.1 Project Structure Setup
 **AC-1.1.1**: Project follows Python packaging standards with `pyproject.toml`
 **AC-1.1.2**: All modules have proper `__init__.py` files with version exports
-**AC-1.1.3**: Directory structure follows FastMCP conventions
-**AC-1.1.4**: Entry points are properly configured for CLI and MCP server
+**AC-1.1.3**: Directory structure follows FastMCP conventions with:
+   - `doc_server/` package with `__init__.py` for proper imports
+   - Entry point file: `mcp_server.py` at package root
+   - Modular subpackages: `ingestion/` and `search/` with `__init__.py` files
+   - Optional provider structure: `tools/`, `resources/` for `FileSystemProvider` discovery
+   - Expected structure: `doc_server/{__init__.py,mcp_server.py,ingestion/__init__.py,search/__init__.py}`
+**AC-1.1.4**: Entry points are properly configured in `pyproject.toml` with:
+    - MCP server entry point: `[project.scripts] doc-server = "doc_server.mcp_server:main"`
+    - Entry point is callable after `pip install -e .`
+    - MCP server contains FastMCP server instance with main() function
 **AC-1.1.5**: Development environment is reproducible with requirements.txt
 
 #### 1.2 Dependencies & Environment
@@ -80,6 +88,21 @@ def test_entry_point_execution():
     
 def test_python_version_compatibility():
     """Test compatibility with Python 3.10+"""
+
+def test_directory_structure():
+    """Test directory structure follows FastMCP conventions"""
+    from pathlib import Path
+    assert (Path("doc_server/__init__.py")).exists()
+    assert (Path("doc_server/mcp_server.py")).exists()
+    assert (Path("doc_server/cli.py")).exists()
+    assert (Path("doc_server/ingestion/__init__.py")).exists()
+    assert (Path("doc_server/search/__init__.py")).exists()
+
+def test_entry_points_configuration():
+    """Test entry points are properly configured"""
+    # Test MCP server can be imported
+    from doc_server.mcp_server import mcp
+    assert mcp is not None
 ```
 
 #### Performance Tests

@@ -1,0 +1,3 @@
+"""
+ZIP archive extraction functionality.
+"""
