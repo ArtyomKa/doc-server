@@ -1,0 +1,63 @@
+# Doc Server Configuration Example
+# Copy this file to ~/.doc-server/config.yaml and modify as needed
+# Settings in this file override environment variables
+
+# Storage paths (only override if using non-standard locations)
+# storage_path: "/custom/path/doc-server"
+
+# Embedding configuration
+embedding_model: "all-MiniLM-L6-v2"
+embedding_device: "cpu"
+embedding_batch_size: 32
+
+# Search behavior
+default_top_k: 10
+search_min_score: 0.5
+keyword_boost: 2.0
+
+# File processing limits
+max_file_size: 1048576  # 1MB in bytes
+allowed_extensions:
+  # Code files
+  - ".py"
+  - ".pyi"
+  - ".c"
+  - ".cpp"
+  - ".h"
+  - ".hpp"
+  # Documentation
+  - ".md"
+  - ".rst"
+  - ".txt"
+  # Configuration files
+  - ".json"
+  - ".yaml"
+  - ".yml"
+  - ".toml"
+  - ".cfg"
+  - ".ini"
+  - ".conf"
+
+# Logging configuration
+log_level: "INFO"
+log_format: "json"
+
+# MCP server settings
+mcp_transport: "stdio"
+mcp_debug: false
+
+# Example overrides for different use cases:
+
+# Development environment example:
+# log_level: "DEBUG"
+# mcp_debug: true
+# keyword_boost: 3.0
+
+# Production environment example:
+# storage_path: "/var/lib/doc-server"
+# log_level: "WARNING"
+# embedding_batch_size: 64
+
+# Large repository handling:
+# max_file_size: 2097152  # 2MB
+# default_top_k: 20

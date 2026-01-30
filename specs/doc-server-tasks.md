@@ -31,11 +31,11 @@
 - [x] Set up development dependencies (pytest, black, flake8)
 
 ### 1.3 Configuration System
-- [ ] Create `config.py` with settings management
-- [ ] Implement environment-based configuration loading
-- [ ] Set up default storage paths (`~/.doc-server/`)
-- [ ] Create configuration validation
-- [ ] Add configuration documentation
+- [x] Create `config.py` with settings management
+- [x] Implement environment-based configuration loading
+- [x] Set up default storage paths (`~/.doc-server/`)
+- [x] Create configuration validation
+- [x] Add configuration documentation
 
 ---
 
