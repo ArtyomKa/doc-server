@@ -8,13 +8,14 @@ Doc Server is an AI-powered documentation management system with intelligent sea
 
 **Technology Stack**: Python 3.10+, FastAPI, MCP, ChromaDB/FAISS, OpenAI embeddings, Pydantic
 
-**Current Implementation State (Phase 2.1)**:
+**Current Implementation State (Phase 2.4)**:
 - ✅ Configuration management with Pydantic settings and YAML support
 - ✅ Git repository cloning with shallow clone and metadata extraction
-- ✅ Test coverage for config and git_cloner modules
+- ✅ ZIP archive extraction with security measures
+- ✅ File filtering with .gitignore parsing and allowlist enforcement
+- ⏳ Document processor (current phase - in progress)
 - ⏳ MCP server implementation (skeleton only)
 - ⏳ Search layer (embeddings, vector store, hybrid search - skeleton)
-- ⏳ Ingestion layer (document processor, file filter, zip extractor - skeleton)
 
 ---
 
@@ -36,8 +37,8 @@ doc_server/
 ├── ingestion/
 │   ├── git_cloner.py      # ✅ Git repository cloning & metadata
 │   ├── document_processor.py  # ⏳ Document content extraction (skeleton)
-│   ├── file_filter.py     # ⏳ File filtering logic (skeleton)
-│   └── zip_extractor.py   # ⏳ ZIP archive extraction (skeleton)
+│   ├── file_filter.py     # ✅ File filtering with .gitignore parsing
+│   └── zip_extractor.py   # ✅ ZIP archive extraction
 └── search/
     ├── embedding_service.py   # ⏳ Embedding generation (skeleton)
     ├── vector_store.py    # ⏳ Vector storage management (skeleton)
@@ -45,7 +46,9 @@ doc_server/
 
 tests/
 ├── test_config.py         # ✅ Full coverage
-└── test_git_cloner.py     # ✅ Full coverage
+├── test_git_cloner.py     # ✅ Full coverage
+├── test_zip_extractor.py  # ✅ Full coverage
+└── test_file_filter.py    # ✅ Full coverage
 ```
 
 ---
