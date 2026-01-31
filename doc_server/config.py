@@ -196,3 +196,7 @@ class Settings(BaseSettings):
         """Initialize settings after creation."""
         # Load YAML configuration if available
         self.load_yaml_config()
+
+
+# Global settings instance
+settings = Settings()
