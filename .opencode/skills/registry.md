@@ -1,2 +1,2 @@
 Created skills:
-- dev-phase-orchestrator: Human-gated 4-phase development workflow
+- isolated-phase-orchestrator: 4-phase workflow with isolated context windows and minimal state handoffs
