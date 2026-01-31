@@ -1,0 +1,299 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Phase State Artifacts Schema",
+  "description": "Schemas for minimal state artifacts passed between isolated phase contexts",
+  "definitions": {
+    "phase_state_base": {
+      "type": "object",
+      "required": ["session_id", "phase_id", "timestamp", "status", "metadata"],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "pattern": "^phase-[0-9]+\\.[0-9]+-[0-9]{8}$",
+          "description": "Unique session identifier"
+        },
+        "phase_id": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$",
+          "description": "Phase identifier (e.g., '2.4')"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of artifact creation"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "failed"],
+          "description": "Phase execution status"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "duration_ms": {"type": "integer"},
+            "agent_id": {"type": "string"},
+            "context_tokens": {"type": "integer"}
+          }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "title": "Alignment State Artifact",
+      "type": "object",
+      "allOf": [
+        {"$ref": "#/definitions/phase_state_base"},
+        {
+          "type": "object",
+          "required": ["phase_type", "alignment_results"],
+          "properties": {
+            "phase_type": {"const": "alignment"},
+            "alignment_results": {
+              "type": "object",
+              "required": ["status", "approved_tasks", "scope_boundaries"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["approved", "rejected", "needs_review"]
+                },
+                "alignment_issues": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {"type": "string"},
+                      "description": {"type": "string"},
+                      "severity": {"type": "string", "enum": ["critical", "major", "minor"]},
+                      "requires_resolution": {"type": "boolean"}
+                    }
+                  }
+                },
+                "approved_tasks": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "description": "List of approved task identifiers"
+                },
+                "scope_boundaries": {
+                  "type": "object",
+                  "properties": {
+                    "included_modules": {
+                      "type": "array",
+                      "items": {"type": "string"}
+                    },
+                    "excluded_modules": {
+                      "type": "array", 
+                      "items": {"type": "string"}
+                    },
+                    "file_patterns": {
+                      "type": "array",
+                      "items": {"type": "string"}
+                    }
+                  }
+                },
+                "decision_log": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "decision": {"type": "string"},
+                      "rationale": {"type": "string"},
+                      "timestamp": {"type": "string", "format": "date-time"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Implementation State Artifact",
+      "type": "object",
+      "allOf": [
+        {"$ref": "#/definitions/phase_state_base"},
+        {
+          "type": "object",
+          "required": ["phase_type", "implementation_results"],
+          "properties": {
+            "phase_type": {"const": "implementation"},
+            "implementation_results": {
+              "type": "object",
+              "required": ["branch_name", "implemented_files", "build_status"],
+              "properties": {
+                "branch_name": {
+                  "type": "string",
+                  "pattern": "^phase-[0-9]+\\.[0-9]+$",
+                  "description": "Git branch name for isolated phase work"
+                },
+                "implemented_files": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {"type": "string"},
+                      "type": {"type": "string", "enum": ["source", "test", "config"]},
+                      "lines_added": {"type": "integer"},
+                      "lines_modified": {"type": "integer"}
+                    }
+                  }
+                },
+                "test_results": {
+                  "type": "object",
+                  "properties": {
+                    "tests_run": {"type": "integer"},
+                    "tests_passed": {"type": "integer"},
+                    "coverage_percentage": {"type": "number"},
+                    "quality_metrics": {
+                      "type": "object",
+                      "properties": {
+                        "complexity": {"type": "string"},
+                        "maintainability": {"type": "string"}
+                      }
+                    }
+                  }
+                },
+                "build_status": {
+                  "type": "string",
+                  "enum": ["success", "failure", "warning"]
+                },
+                "implementation_notes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {"type": "string"},
+                      "message": {"type": "string"},
+                      "timestamp": {"type": "string", "format": "date-time"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Verification State Artifact", 
+      "type": "object",
+      "allOf": [
+        {"$ref": "#/definitions/phase_state_base"},
+        {
+          "type": "object",
+          "required": ["phase_type", "verification_results"],
+          "properties": {
+            "phase_type": {"const": "verification"},
+            "verification_results": {
+              "type": "object",
+              "required": ["status", "ac_results", "test_coverage"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["approved", "rejected", "needs_review"]
+                },
+                "ac_results": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^AC-[0-9]+\\.[0-9]+\\.[0-9]+$": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": ["✅", "⚠️", "❌"]
+                        },
+                        "evidence": {"type": "string"},
+                        "test_coverage": {"type": "boolean"},
+                        "notes": {"type": "string"}
+                      }
+                    }
+                  }
+                },
+                "test_coverage": {
+                  "type": "object",
+                  "required": ["percentage", "threshold_met"],
+                  "properties": {
+                    "percentage": {"type": "number"},
+                    "threshold_met": {"type": "boolean"},
+                    "coverage_by_module": {
+                      "type": "object",
+                      "additionalProperties": {"type": "number"}
+                    }
+                  }
+                },
+                "verification_failures": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ac_id": {"type": "string"},
+                      "failure_type": {"type": "string"},
+                      "description": {"type": "string"},
+                      "severity": {"type": "string", "enum": ["critical", "major", "minor"]},
+                      "suggested_fix": {"type": "string"}
+                    }
+                  }
+                },
+                "quality_metrics": {
+                  "type": "object",
+                  "properties": {
+                    "code_quality_score": {"type": "number"},
+                    "test_quality_score": {"type": "number"},
+                    "documentation_coverage": {"type": "number"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Commit State Artifact",
+      "type": "object", 
+      "allOf": [
+        {"$ref": "#/definitions/phase_state_base"},
+        {
+          "type": "object",
+          "required": ["phase_type", "commit_results"],
+          "properties": {
+            "phase_type": {"const": "commit"},
+            "commit_results": {
+              "type": "object",
+              "required": ["commit_hash", "files_committed"],
+              "properties": {
+                "commit_hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$",
+                  "description": "Git commit SHA"
+                },
+                "branch_name": {"type": "string"},
+                "commit_message": {"type": "string"},
+                "files_committed": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {"type": "string"},
+                      "status": {"type": "string", "enum": ["added", "modified", "deleted"]},
+                      "changes": {"type": "integer"}
+                    }
+                  }
+                },
+                "remote_status": {
+                  "type": "object",
+                  "properties": {
+                    "pushed": {"type": "boolean"},
+                    "remote_url": {"type": "string"},
+                    "branch_created": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
