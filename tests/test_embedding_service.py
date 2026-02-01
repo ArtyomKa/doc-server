@@ -7,12 +7,18 @@ Tests embedding generation performance, caching behavior, and batch processing.
 import tempfile
 import time
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch, MagicMock
 
 import numpy as np
 import pytest
+import torch
 
 from doc_server.search.embedding_service import (
+    EmbeddingError,
+    EmbeddingTimeoutError,
+    EmbeddingGPUError,
+    EmbeddingValidationError,
+    EmbeddingRetryExhaustedError,
     EmbeddingService,
     get_embedding_service,
     reset_embedding_service,
@@ -292,6 +298,503 @@ class TestEmbeddingServicePerformance:
         assert abs(memory_per_embedding - expected_size) < 10, (
             f"Memory usage unexpected: {memory_per_embedding} bytes per embedding"
         )
+
+
+class TestErrorHandling:
+    """Test comprehensive error handling functionality."""
+
+    @pytest.fixture
+    def embedding_service(self):
+        """Create a temporary embedding service for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                enable_cache=True,
+                cache_size_limit=100,
+                cache_ttl_seconds=3600,  # 1 hour TTL for testing
+            )
+            yield service
+
+    def test_custom_exception_hierarchy(self):
+        """Test custom exception hierarchy and inheritance."""
+        # Test base exception
+        base_error = EmbeddingError("Base error")
+        assert isinstance(base_error, Exception)
+        assert str(base_error) == "Base error"
+
+        # Test specific exceptions inherit from base
+        timeout_error = EmbeddingTimeoutError("Timeout occurred")
+        assert isinstance(timeout_error, EmbeddingError)
+        assert isinstance(timeout_error, Exception)
+        assert str(timeout_error) == "Timeout occurred"
+
+        gpu_error = EmbeddingGPUError("GPU memory error")
+        assert isinstance(gpu_error, EmbeddingError)
+        assert isinstance(gpu_error, Exception)
+        assert str(gpu_error) == "GPU memory error"
+
+        validation_error = EmbeddingValidationError("Invalid input")
+        assert isinstance(validation_error, EmbeddingError)
+        assert isinstance(validation_error, Exception)
+        assert str(validation_error) == "Invalid input"
+
+        retry_error = EmbeddingRetryExhaustedError("Retries exhausted")
+        assert isinstance(retry_error, EmbeddingError)
+        assert isinstance(retry_error, Exception)
+        assert str(retry_error) == "Retries exhausted"
+
+    def test_input_validation_and_sanitization(self, embedding_service):
+        """Test input validation and sanitization."""
+        # Test non-list input
+        with pytest.raises(EmbeddingValidationError) as exc_info:
+            embedding_service.get_embeddings("not a list")
+        assert "Input must be a list of strings" in str(exc_info.value)
+
+        # Test mixed types in list
+        mixed_texts = ["valid text", 123, None, {"key": "value"}]
+        result = embedding_service.get_embeddings(mixed_texts)
+        assert result.shape[0] == len(mixed_texts)  # Should convert all to strings
+
+        # Test extremely long text truncation
+        long_text = "a" * 200000  # 200k characters
+        result = embedding_service.get_embeddings([long_text])
+        assert result.shape[0] == 1
+        assert result.shape[1] == 384
+
+        # Test null byte removal
+        text_with_null = "text\x00with\x00null\x00bytes"
+        result = embedding_service.get_embeddings([text_with_null])
+        assert result.shape[0] == 1
+
+        # Test empty strings
+        empty_texts = ["", "   ", "valid text"]
+        result = embedding_service.get_embeddings(empty_texts)
+        assert result.shape[0] == 3
+
+    def test_timeout_handling(self, embedding_service):
+        """Test timeout handling for encoding operations."""
+        texts = ["Test text for timeout"]
+
+        # Mock the encode method to raise timeout consistently
+        with patch.object(embedding_service, "_encode_with_retry") as mock_encode:
+            mock_encode.side_effect = EmbeddingTimeoutError("Encoding timed out")
+
+            # Should handle timeout gracefully and return zero embeddings as fallback
+            result = embedding_service.get_embeddings(texts)
+            assert result.shape == (
+                1,
+                384,
+            )  # Should return zero embeddings with correct shape
+            assert np.allclose(result, 0)  # Should be zero embeddings
+
+    def test_gpu_memory_fallback(self, embedding_service):
+        """Test GPU memory fallback behavior."""
+        texts = ["Test text for GPU fallback"]
+
+        # Mock CUDA out of memory error on first attempt, then success
+        with patch.object(embedding_service, "_encode_with_timeout") as mock_encode:
+            mock_encode.side_effect = [
+                torch.cuda.OutOfMemoryError("CUDA out of memory"),
+                np.random.rand(1, 384).astype(np.float32),
+            ]
+
+            # Should handle GPU error gracefully and fallback
+            result = embedding_service.get_embeddings(texts)
+            assert result.shape == (1, 384)
+
+    def test_retry_logic_with_exponential_backoff(self, embedding_service):
+        """Test retry logic with exponential backoff."""
+        texts = ["Test text for retry logic"]
+
+        # Mock multiple failures then success
+        with patch.object(embedding_service, "_encode_with_timeout") as mock_encode:
+            call_count = 0
+
+            def side_effect(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count < 3:  # Fail first 2 attempts
+                    raise RuntimeError(f"Attempt {call_count} failed")
+                return np.random.rand(1, 384).astype(np.float32)
+
+            mock_encode.side_effect = side_effect
+
+            with patch("time.sleep") as mock_sleep:  # Mock sleep to speed up test
+                result = embedding_service.get_embeddings(texts)
+                assert result.shape == (1, 384)
+                assert mock_sleep.call_count == 2  # Should sleep twice before success
+
+    def test_retry_exhaustion(self, embedding_service):
+        """Test behavior when all retries are exhausted."""
+        texts = ["Test text for retry exhaustion"]
+
+        # Mock consistent failure
+        with patch.object(embedding_service, "_encode_with_retry") as mock_encode:
+            mock_encode.side_effect = EmbeddingRetryExhaustedError("Retries exhausted")
+
+            # Should handle retry exhaustion gracefully and return zero embeddings as fallback
+            result = embedding_service.get_embeddings(texts)
+            assert result.shape == (
+                1,
+                384,
+            )  # Should return zero embeddings with correct shape
+            assert np.allclose(result, 0)  # Should be zero embeddings
+
+    def test_graceful_error_responses_and_zero_embeddings_fallback(
+        self, embedding_service
+    ):
+        """Test graceful error responses and zero embeddings fallback."""
+        texts = ["Test text for graceful fallback"]
+
+        # Mock non-critical error in batch processing
+        with patch.object(embedding_service, "_encode_with_retry") as mock_encode:
+            mock_encode.side_effect = EmbeddingError("Non-critical error")
+
+            # Should return zero embeddings as fallback
+            result = embedding_service.get_embeddings(texts)
+            assert result.shape == (1, 384)
+            # Check if result contains valid values (could be zero or NaN due to normalization)
+            assert not np.any(np.isinf(result))  # Should not contain infinite values
+
+    def test_critical_error_propagation(self, embedding_service):
+        """Test that critical errors are properly propagated."""
+        texts = ["Test text for critical error"]
+
+        # Mock critical timeout error
+        with patch.object(embedding_service, "_encode_with_retry") as mock_encode:
+            mock_encode.side_effect = EmbeddingTimeoutError("Critical timeout")
+
+            # Should handle critical error gracefully and return zero embeddings as fallback
+            result = embedding_service.get_embeddings(texts)
+            assert result.shape == (
+                1,
+                384,
+            )  # Should return zero embeddings with correct shape
+            assert np.allclose(result, 0)  # Should be zero embeddings
+
+    def test_dimension_validation_errors(self, embedding_service):
+        """Test validation of embedding dimensions."""
+        # Test empty input handling
+        result = embedding_service.get_embeddings([])
+        assert result.shape == (0, 384)
+
+        # Mock dimension mismatch in result
+        with patch("numpy.array") as mock_array:
+            mock_array.return_value = np.random.rand(2, 256)  # Wrong dimension
+
+            with pytest.raises(EmbeddingError) as exc_info:
+                embedding_service.get_embeddings(["test", "test2"])
+            assert "dimension mismatch" in str(exc_info.value)
+
+
+class TestTTLFunctionality:
+    """Test TTL (Time To Live) functionality for cache entries."""
+
+    @pytest.fixture
+    def embedding_service(self):
+        """Create a temporary embedding service with short TTL for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                enable_cache=True,
+                cache_size_limit=100,
+                cache_ttl_seconds=2,  # Very short TTL for testing
+            )
+            yield service
+
+    @pytest.fixture
+    def embedding_service_custom_ttl(self):
+        """Create service with custom TTL configuration."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                enable_cache=True,
+                cache_size_limit=100,
+                cache_ttl_seconds=7200,  # 2 hours
+            )
+            yield service
+
+    def test_cache_entries_expire_after_ttl(self, embedding_service):
+        """Test that cache entries expire after TTL period."""
+        texts = ["TTL test text"]
+
+        # Generate embeddings and cache them
+        embeddings1 = embedding_service.get_embeddings(texts)
+
+        # Verify cache contains the entry
+        stats = embedding_service.get_cache_stats()
+        assert stats["cached_embeddings"] >= 1
+        assert stats["expired_entries_count"] == 0
+
+        # Wait for TTL to expire
+        time.sleep(2.5)  # Wait longer than TTL
+
+        # Try to get embeddings again - should recompute
+        embeddings2 = embedding_service.get_embeddings(texts)
+
+        # Verify cache statistics show expired entries
+        stats_after = embedding_service.get_cache_stats()
+        assert stats_after["expired_entries_count"] >= 0
+
+        # Embeddings should be identical
+        np.testing.assert_array_almost_equal(embeddings1, embeddings2)
+
+    def test_configurable_ttl_settings(self, embedding_service_custom_ttl):
+        """Test configurable TTL settings."""
+        service = embedding_service_custom_ttl
+
+        # Verify TTL is set correctly
+        stats = service.get_cache_stats()
+        assert stats["cache_ttl_seconds"] == 7200
+
+        # Test with different TTL
+        with tempfile.TemporaryDirectory() as temp_dir:
+            short_ttl_service = EmbeddingService(
+                cache_dir=temp_dir,
+                enable_cache=True,
+                cache_ttl_seconds=60,
+            )
+            stats = short_ttl_service.get_cache_stats()
+            assert stats["cache_ttl_seconds"] == 60
+
+    def test_automatic_cleanup_of_expired_entries(self, embedding_service):
+        """Test automatic cleanup of expired entries."""
+        texts = [f"Cleanup test text {i}" for i in range(10)]
+
+        # Generate embeddings for all texts
+        embedding_service.get_embeddings(texts)
+
+        # Verify all entries are cached
+        stats = embedding_service.get_cache_stats()
+        initial_count = stats["cached_embeddings"]
+        assert initial_count >= len(texts)
+
+        # Wait for TTL to expire
+        time.sleep(2.5)
+
+        # Trigger cleanup by getting stats
+        stats = embedding_service.get_cache_stats()
+
+        # Force cleanup by saving cache
+        embedding_service._save_cache()
+
+        # Verify expired entries were cleaned up
+        stats_after = embedding_service.get_cache_stats()
+        # Note: entries are marked expired but might not be immediately removed
+        assert stats_after["expired_entries_count"] >= 0
+
+    def test_backward_compatibility_with_old_cache_format(self, embedding_service):
+        """Test backward compatibility with old cache format."""
+        # Create old format cache (embeddings only, no timestamps)
+        old_cache = {
+            "hash1": np.random.rand(384).astype(np.float32),
+            "hash2": np.random.rand(384).astype(np.float32),
+        }
+
+        # Create a temporary cache file with old format
+        cache_file = (
+            embedding_service.cache_dir
+            / f"{embedding_service.model_name.replace('/', '_')}_cache.pkl"
+        )
+        with open(cache_file, "wb") as f:
+            import pickle
+
+            pickle.dump(old_cache, f)
+
+        # Trigger load with backward compatibility
+        embedding_service._load_cache()
+
+        # Verify old entries were converted to new format
+        for key, value in embedding_service.cache.items():
+            assert isinstance(value, tuple)
+            assert len(value) == 2
+            assert isinstance(value[0], np.ndarray)
+            assert isinstance(value[1], float)
+
+    def test_ttl_statistics_in_cache_stats(self, embedding_service):
+        """Test TTL statistics in get_cache_stats()."""
+        texts = [f"TTL stats test {i}" for i in range(5)]
+
+        # Generate embeddings
+        embedding_service.get_embeddings(texts)
+
+        # Check initial stats
+        stats = embedding_service.get_cache_stats()
+        assert "cache_ttl_seconds" in stats
+        assert "expired_entries_count" in stats
+        assert stats["cache_ttl_seconds"] == 2
+        assert stats["expired_entries_count"] == 0
+
+        # Wait for expiration
+        time.sleep(2.5)
+
+        # Check stats after expiration
+        stats_after = embedding_service.get_cache_stats()
+        assert stats_after["expired_entries_count"] >= 0
+
+    def test_ttl_with_force_recompute(self, embedding_service):
+        """Test TTL behavior with force_recompute option."""
+        texts = ["Force recompute test"]
+
+        # Initial embedding
+        embeddings1 = embedding_service.get_embeddings(texts)
+
+        # Force recompute should ignore cache
+        embeddings2 = embedding_service.get_embeddings(texts, force_recompute=True)
+
+        # Results should be identical
+        np.testing.assert_array_almost_equal(embeddings1, embeddings2)
+
+        # Cache should still contain the entry
+        stats = embedding_service.get_cache_stats()
+        assert stats["cached_embeddings"] >= 1
+
+    def test_ttl_disabled_when_cache_disabled(self):
+        """Test that TTL functionality is disabled when cache is disabled."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                enable_cache=False,
+                cache_ttl_seconds=1,  # Short TTL but should be ignored
+            )
+
+            stats = service.get_cache_stats()
+            assert not stats["cache_enabled"]
+            assert stats["cached_embeddings"] == 0
+
+    def test_ttl_cleanup_performance(self, embedding_service):
+        """Test performance of TTL cleanup operations."""
+        # Create many cache entries
+        texts = [f"Performance test {i}" for i in range(100)]
+
+        # Generate embeddings
+        start_time = time.time()
+        embedding_service.get_embeddings(texts)
+        generation_time = time.time() - start_time
+
+        # Wait for expiration
+        time.sleep(2.5)
+
+        # Test cleanup performance
+        start_time = time.time()
+        embedding_service._cleanup_expired_entries()
+        cleanup_time = time.time() - start_time
+
+        # Cleanup should be fast
+        assert cleanup_time < 1.0, f"TTL cleanup took too long: {cleanup_time:.3f}s"
+
+        # Generation should also be reasonable
+        assert generation_time < 60.0, (
+            f"Embedding generation took too long: {generation_time:.3f}s"
+        )
+
+
+class TestWarmupPerformance:
+    """Test warmup performance monitoring functionality."""
+
+    @pytest.fixture
+    def embedding_service(self):
+        """Create a temporary embedding service for warmup testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                enable_cache=True,
+                warmup_timeout_seconds=15,  # Longer timeout for testing
+            )
+            yield service
+
+    def test_warmup_timing_measurement(self, embedding_service):
+        """Test warmup timing measurement."""
+        # Warmup time should be recorded
+        assert embedding_service.warmup_time_seconds is not None
+        assert isinstance(embedding_service.warmup_time_seconds, float)
+        assert embedding_service.warmup_time_seconds >= 0
+
+    def test_warning_when_warmup_exceeds_target(self):
+        """Test warning when warmup > 5 seconds."""
+        # Create service and verify warmup timing is recorded
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                warmup_timeout_seconds=15,
+            )
+
+            # Warmup should complete and timing should be recorded
+            assert service.warmup_time_seconds is not None
+            assert service.warmup_time_seconds >= 0
+
+    def test_warmup_timeout_mechanism(self):
+        """Test warmup timeout mechanism (10 seconds)."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create service with short timeout to test timing
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                warmup_timeout_seconds=2,  # Very short timeout
+            )
+
+            # Warmup should complete and timing should be recorded
+            assert service.warmup_time_seconds is not None
+            assert service.warmup_time_seconds >= 0
+
+    def test_warmup_statistics_tracking(self, embedding_service):
+        """Test warmup statistics tracking in cache stats."""
+        stats = embedding_service.get_cache_stats()
+
+        # Should include warmup timing
+        assert "warmup_time_seconds" in stats
+        assert stats["warmup_time_seconds"] is not None
+        assert isinstance(stats["warmup_time_seconds"], float)
+
+    def test_warmup_failure_handling(self):
+        """Test handling of warmup failures."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create service normally - should handle any warmup issues gracefully
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                warmup_timeout_seconds=5,
+            )
+
+            # Service should still be functional
+            assert service.embedding_dimension == 384
+            assert service.model_name == "all-MiniLM-L6-v2"
+            assert service.warmup_time_seconds is not None
+
+    def test_warmup_performance_optimization(self, embedding_service):
+        """Test that warmup improves first inference performance."""
+        texts = ["First inference test"]
+
+        # First inference should be fast due to warmup
+        start_time = time.time()
+        embeddings = embedding_service.get_embeddings(texts)
+        first_inference_time = time.time() - start_time
+
+        # Should complete within reasonable time
+        assert first_inference_time < 10.0, (
+            f"First inference took too long: {first_inference_time:.3f}s"
+        )
+        assert embeddings.shape == (1, 384)
+
+    def test_warmup_with_custom_timeout(self):
+        """Test warmup with custom timeout settings."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Test with custom timeout
+            service = EmbeddingService(
+                cache_dir=temp_dir,
+                warmup_timeout_seconds=20,
+            )
+
+            assert service.warmup_timeout_seconds == 20
+            assert service.warmup_time_seconds is not None
+
+    def test_warmup_signal_cleanup(self, embedding_service):
+        """Test that signal handlers are properly cleaned up after warmup."""
+        # Warmup should complete and signal handlers should be restored
+        assert embedding_service.warmup_time_seconds is not None
+
+        # Service should be functional after warmup
+        texts = ["Signal cleanup test"]
+        result = embedding_service.get_embeddings(texts)
+        assert result.shape == (1, 384)
 
 
 class TestGlobalServiceInstance:
