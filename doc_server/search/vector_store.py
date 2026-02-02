@@ -137,7 +137,9 @@ class ChromaVectorStore:
 
         # Initialize embedding service
         self.embedding_service = embedding_service or get_embedding_service()
-        self.embedding_function = ChromaEmbeddingFunction(self.embedding_service)
+        # Note: We'll use ChromaDB's default embedding function for now
+        # self.embedding_function = ChromaEmbeddingFunction(self.embedding_service)
+        self.embedding_function = None
 
         # Configure ChromaDB settings
         self.chroma_settings = ChromaSettings(
@@ -336,11 +338,13 @@ class ChromaVectorStore:
             )
 
             def _create():
-                return self.client.get_or_create_collection(
-                    name=collection_name,
-                    embedding_function=self.embedding_function,
-                    metadata=collection_metadata,
-                )
+                kwargs = {
+                    "name": collection_name,
+                    "metadata": collection_metadata,
+                }
+                if self.embedding_function is not None:
+                    kwargs["embedding_function"] = self.embedding_function
+                return self.client.get_or_create_collection(**kwargs)
 
             collection = self._retry_operation(_create)
 
@@ -377,10 +381,12 @@ class ChromaVectorStore:
             )
 
             def _get():
-                return self.client.get_collection(
-                    name=collection_name,
-                    embedding_function=self.embedding_function,
-                )
+                kwargs = {
+                    "name": collection_name,
+                }
+                if self.embedding_function is not None:
+                    kwargs["embedding_function"] = self.embedding_function
+                return self.client.get_collection(**kwargs)
 
             collection = self._retry_operation(_get)
 
@@ -548,13 +554,25 @@ class ChromaVectorStore:
                 )
 
                 try:
+                    # Generate embeddings manually if not using ChromaDB's embedding function
+                    if self.embedding_function is None:
+                        embeddings = self.embedding_service.get_embeddings(batch_docs)
 
-                    def _add_batch():
-                        collection.add(
-                            documents=batch_docs,
-                            ids=batch_ids,
-                            metadatas=batch_metas,
-                        )
+                        def _add_batch():
+                            collection.add(
+                                documents=batch_docs,
+                                ids=batch_ids,
+                                metadatas=batch_metas,
+                                embeddings=embeddings.tolist(),
+                            )
+                    else:
+
+                        def _add_batch():
+                            collection.add(
+                                documents=batch_docs,
+                                ids=batch_ids,
+                                metadatas=batch_metas,
+                            )
 
                     self._retry_operation(_add_batch)
                     added_ids.extend(batch_ids)
