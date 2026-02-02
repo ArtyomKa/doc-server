@@ -163,6 +163,7 @@ torchvision = { index = "pytorch-cpu" }
 
 [dependency-groups]
 dev = [
+    "pytest-cov>=7.0.0",
     "ruff>=0.14.14",
 ]
 
