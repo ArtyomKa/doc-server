@@ -83,11 +83,11 @@
 - [x] Write performance tests for embedding generation
 
 ### 3.2 Vector Store Module
-- [ ] Implement `vector_store.py` with ChromaDB integration
-- [ ] Add collection management by library ID
-- [ ] Configure persistent storage
-- [ ] Implement index management utilities
-- [ ] Write tests for storage operations
+- [x] Implement `vector_store.py` with ChromaDB integration
+- [x] Add collection management by library ID
+- [x] Configure persistent storage
+- [x] Implement index management utilities
+- [x] Write tests for storage operations
 
 ### 3.3 Hybrid Search Module
 - [ ] Implement `hybrid_search.py` with vector similarity
