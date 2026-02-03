@@ -137,9 +137,8 @@ class ChromaVectorStore:
 
         # Initialize embedding service
         self.embedding_service = embedding_service or get_embedding_service()
-        # Note: We'll use ChromaDB's default embedding function for now
-        # self.embedding_function = ChromaEmbeddingFunction(self.embedding_service)
-        self.embedding_function = None
+        # Create ChromaDB embedding function adapter
+        self.embedding_function = ChromaEmbeddingFunction(self.embedding_service)
 
         # Configure ChromaDB settings
         self.chroma_settings = ChromaSettings(
