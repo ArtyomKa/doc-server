@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     default_top_k: int = 10
     search_min_score: float = 0.5
     keyword_boost: float = 2.0
+    search_vector_weight: float = 0.7
+    search_keyword_weight: float = 0.3
 
     # File Processing
     max_file_size: int = 1048576  # 1MB in bytes

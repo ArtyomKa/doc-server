@@ -29,6 +29,16 @@ from .vector_store import (
     get_vector_store,
     reset_vector_store,
 )
+from .hybrid_search import (
+    BM25Scorer,
+    HybridSearch,
+    HybridSearchError,
+    HybridSearchQueryError,
+    HybridSearchValidationError,
+    SearchResult,
+    get_hybrid_search,
+    reset_hybrid_search,
+)
 
 __all__ = [
     # Embedding service
@@ -53,4 +63,13 @@ __all__ = [
     "VectorStoreError",
     "get_vector_store",
     "reset_vector_store",
+    # Hybrid search
+    "BM25Scorer",
+    "HybridSearch",
+    "HybridSearchError",
+    "HybridSearchQueryError",
+    "HybridSearchValidationError",
+    "SearchResult",
+    "get_hybrid_search",
+    "reset_hybrid_search",
 ]

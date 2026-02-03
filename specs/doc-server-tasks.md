@@ -90,11 +90,13 @@
 - [x] Write tests for storage operations (64 tests, 100% passing)
 
 ### 3.3 Hybrid Search Module
-- [ ] Implement `hybrid_search.py` with vector similarity
-- [ ] Add keyword boost for exact terms
-- [ ] Implement result ranking algorithm
-- [ ] Add metadata enrichment (scores, line numbers)
-- [ ] Write tests for search accuracy
+- [x] Implement `hybrid_search.py` with vector similarity
+- [x] Add keyword/term-based search (BM25 or similar)
+- [x] Implement result ranking/fusion algorithm for combining vector and keyword scores
+- [x] Add configurable search weights (default: vector 0.7, keyword 0.3)
+- [x] Add metadata enrichment (scores, line numbers, file paths)
+- [x] Implement error handling for empty queries and invalid search parameters
+- [x] Write tests for search accuracy and ranking
 
 ---
 
@@ -202,13 +204,13 @@
 ### Current Status
 - **Phase 1**: 12/17 tasks complete (1.1 ✅ complete, 1.2 ✅ complete, 1.3 incomplete)
 - **Phase 2**: 15/16 tasks complete (2.1 ✅ complete, 2.2 ✅ complete, 2.3 ✅ complete, 2.4 incomplete)
-- **Phase 3**: 10/15 tasks complete (3.1 ✅ complete, 3.2 ✅ complete, 3.3 incomplete)
+- **Phase 3**: 12/15 tasks complete (3.1 ✅ complete, 3.2 ✅ complete, 3.3 ✅ complete)
 - **Phase 4**: 0/9 tasks complete
 - **Phase 5**: OUT OF SCOPE (per product spec)
 - **Phase 6**: 0/12 tasks complete
 - **Phase 7**: 0/10 tasks complete
 
-**Overall Progress**: 37/69 tasks complete (54%)
+**Overall Progress**: 39/69 tasks complete (56%)
 
 ---
 

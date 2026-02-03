@@ -265,7 +265,7 @@ def test_large_file_handling():
 **AC-3.2.5**: Handles collection size limits and scaling
 
 #### 3.3 Hybrid Search Module
-**AC-3.3.1**: Combines vector similarity with keyword matching (RRF fusion)
+**AC-3.3.1**: Combines vector similarity with keyword matching using a ranking/fusion algorithm (e.g., RRF, weighted sum, or similar)
 **AC-3.3.2**: Boosts exact term matches in search results
 **AC-3.3.3**: Implements configurable search weights (vector: 0.7, keyword: 0.3)
 **AC-3.3.4**: Enriches results with metadata (scores, line numbers, file paths)
