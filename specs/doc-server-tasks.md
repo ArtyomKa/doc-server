@@ -110,11 +110,11 @@
 - [x] Add graceful shutdown handling
 
 ### 4.2 Library Management Tools
-- [ ] Implement `ingest_library(source, library_id)` tool
-- [ ] Implement `list_libraries()` tool
-- [ ] Implement `remove_library(library_id)` tool
-- [ ] Add input validation and sanitization
-- [ ] Write MCP protocol compliance tests
+- [x] Implement `ingest_library(source, library_id)` tool
+- [x] Implement `list_libraries()` tool
+- [x] Implement `remove_library(library_id)` tool
+- [x] Add input validation and sanitization
+- [x] Write MCP protocol compliance tests
 
 ### 4.3 Server Configuration
 - [ ] Configure logging for debugging
@@ -205,7 +205,7 @@
 - **Phase 1**: 12/17 tasks complete (1.1 ✅ complete, 1.2 ✅ complete, 1.3 incomplete)
 - **Phase 2**: 15/16 tasks complete (2.1 ✅ complete, 2.2 ✅ complete, 2.3 ✅ complete, 2.4 incomplete)
 - **Phase 3**: 12/15 tasks complete (3.1 ✅ complete, 3.2 ✅ complete, 3.3 ✅ complete)
-- **Phase 4**: 5/9 tasks complete (4.1 ✅ complete, 4.2 pending, 4.3 pending)
+- **Phase 4**: 8/9 tasks complete (4.1 ✅ complete, 4.2 ✅ complete, 4.3 pending)
 - **Phase 5**: OUT OF SCOPE (per product spec)
 - **Phase 6**: 0/12 tasks complete
 - **Phase 7**: 0/10 tasks complete
