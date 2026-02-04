@@ -146,8 +146,8 @@ def remove_library(library_id: str) -> bool:
 - Error handling and logging
 - Graceful shutdown handling
 
-### Phase 5: CLI Interface
-**Priority**: Medium
+### Phase 8: CLI Interface
+**Priority**: Low (after Phase 7 Documentation)
 **Timeline**: 1-2 days
 
 #### 5.1 Command Line Interface

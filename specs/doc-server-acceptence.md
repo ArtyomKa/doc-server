@@ -483,7 +483,7 @@ def test_authentication_scope():
 
 ---
 
-## Phase 5: CLI Interface
+## Phase 8: CLI Interface
 
 ### Acceptance Criteria
 

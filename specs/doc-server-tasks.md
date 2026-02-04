@@ -125,7 +125,7 @@
 
 ---
 
-## Phase 5: CLI Interface (Priority: Medium) ❌ OUT OF SCOPE
+## Phase 8: CLI Interface (Priority: Low) ⏳ AFTER PHASE 7
 
 ### 5.1 Command Line Interface
 - [ ] Implement CLI entry point with Click
@@ -238,9 +238,9 @@
 
 **Core MVP includes**: Phases 1-4, minimal tests (6.1)
 
-**Stretch MVP includes**: All phases except advanced documentation and CLI (Phase 5 - OUT OF SCOPE)
+**Stretch MVP includes**: All phases except advanced documentation (Phase 8 - AFTER 7)
 
-**Release-ready**: All phases complete (excluding Phase 5)
+**Release-ready**: All phases complete (including Phase 8 CLI)
 
 ---
 
@@ -251,7 +251,7 @@
 - **Phase 2**: 15/16 tasks complete (2.1 ✅ complete, 2.2 ✅ complete, 2.3 ✅ complete, 2.4 incomplete)
 - **Phase 3**: 12/15 tasks complete (3.1 ✅ complete, 3.2 ✅ complete, 3.3 ✅ complete)
 - **Phase 4**: 9/9 tasks complete (4.1 ✅ complete, 4.2 ✅ complete, 4.3 ✅ complete)
-- **Phase 5**: OUT OF SCOPE (per product spec)
+- **Phase 8**: CLI Interface (AFTER Phase 7)
 - **Phase 6**: 13/12 tasks complete (6.1 ✅ complete, 6.2 ✅ COMPLETE, 6.3 incomplete)
 - **Phase 6.1.1**: 9/9 tasks complete ✅ COMPLETE (All 15 acceptance criteria verified by @oracle)
 - **Phase 7**: 0/10 tasks complete
