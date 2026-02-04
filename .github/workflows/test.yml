@@ -27,9 +27,12 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Create virtual environment
+        run: uv venv
+
       - name: Install linting tools
         run: |
-          uv pip install --system black isort ruff mypy
+          uv pip install black isort ruff mypy
 
       - name: Run Black
         run: black --check doc_server/ tests/
@@ -161,9 +164,12 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Create virtual environment
+        run: uv venv
+
       - name: Install security tools
         run: |
-          uv pip install --system bandit safety
+          uv pip install bandit safety
 
       - name: Run Bandit
         run: bandit -r doc_server/ -f json -o bandit_report.json
