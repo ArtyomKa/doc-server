@@ -185,7 +185,7 @@ doc-server serve
 - Performance benchmarks
 - Search quality metrics
 
-### Phase 6.2: ChromaDB Compatibility & Search Implementation
+### Phase 6.1.1: ChromaDB Compatibility & Search Implementation
 **Priority**: High
 **Timeline**: 1-2 days
 
