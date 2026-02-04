@@ -185,6 +185,9 @@ def test_ac_3_2_5_scaling_limits():
     with tempfile.TemporaryDirectory() as temp_dir:
         store = ChromaVectorStore(persist_directory=temp_dir)
 
+        # Create the collection first
+        store.create_collection("scaling-test")
+
         # Test with a reasonably large batch to verify scaling
         large_batch = [f"Document {i}" for i in range(500)]
 
