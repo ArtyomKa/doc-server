@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Test script to verify MCP server components work."""
+"""Development script to verify doc-server components work correctly."""
 
 import asyncio
 from pathlib import Path
@@ -11,8 +11,8 @@ from doc_server.ingestion.document_processor import DocumentProcessor
 from doc_server.search.embedding_service import EmbeddingService
 
 
-async def test_components():
-    print("Testing doc-server components...\n")
+async def verify_components():
+    print("Verifying doc-server components...\n")
 
     # 1. Test configuration
     print("1. Configuration")
@@ -25,7 +25,7 @@ async def test_components():
     print("2. File Filter")
     filter = FileFilter(settings)
     test_dir = Path("/home/artyom/devel/doc-server")
-    result = filter.filter_directory(test_dir)
+    result = filter.filter_directory(str(test_dir))
     print(f"   Found {len(result)} files to process")
     for f in result[:3]:
         print(f"   - {f.file_path}")
@@ -57,4 +57,4 @@ async def test_components():
 
 
 if __name__ == "__main__":
-    asyncio.run(test_components())
+    asyncio.run(verify_components())
