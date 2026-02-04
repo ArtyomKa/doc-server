@@ -150,7 +150,7 @@ def remove_library(library_id: str) -> bool:
 **Priority**: Low (after Phase 7 Documentation)
 **Timeline**: 1-2 days
 
-#### 5.1 Command Line Interface
+#### 8.1 Command Line Interface
 ```bash
 doc-server ingest --source <url|path|zip> --library-id <id>
 doc-server search --query <text> --library-id <id>
@@ -159,7 +159,7 @@ doc-server remove --library-id <id>
 doc-server serve
 ```
 
-#### 5.2 Progress Indicators
+#### 8.2 Progress Indicators
 - Ingestion progress bars
 - Search result formatting
 - Error messages and validation

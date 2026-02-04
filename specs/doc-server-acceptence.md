@@ -487,14 +487,14 @@ def test_authentication_scope():
 
 ### Acceptance Criteria
 
-#### 5.1 Command Line Interface
+#### 8.1 Command Line Interface
 **AC-5.1.1**: Implements all commands: ingest, search, list, remove, serve
 **AC-5.1.2**: Provides comprehensive help text and usage examples
 **AC-5.1.3**: Supports configuration via command-line options
 **AC-5.1.4**: Validates command arguments with helpful error messages
 **AC-5.1.5**: Integrates with shell completion where possible
 
-#### 5.2 User Experience
+#### 8.2 User Experience
 **AC-5.2.1**: Shows progress bars for operations >2 seconds
 **AC-5.2.2**: Formats search results for readable terminal output
 **AC-5.2.3**: Uses colored output for better readability

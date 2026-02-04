@@ -127,7 +127,7 @@
 
 ## Phase 8: CLI Interface (Priority: Low) ⏳ AFTER PHASE 7
 
-### 5.1 Command Line Interface
+### 8.1 Command Line Interface
 - [ ] Implement CLI entry point with Click
 - [ ] Add `ingest` command with options
 - [ ] Add `search` command with query parameters
@@ -135,7 +135,7 @@
 - [ ] Add `remove` command for library deletion
 - [ ] Add `serve` command for starting MCP server
 
-### 5.2 User Experience
+### 8.2 User Experience
 - [ ] Add progress bars for long operations
 - [ ] Format search results for terminal display
 - [ ] Add colored output and formatting
