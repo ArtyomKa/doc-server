@@ -185,6 +185,28 @@ doc-server serve
 - Performance benchmarks
 - Search quality metrics
 
+### Phase 6.2: ChromaDB Compatibility & Search Implementation
+**Priority**: High
+**Timeline**: 1-2 days
+
+#### 6.2.1 ChromaDB API Compatibility
+- Fix ChromaEmbeddingFunction class to implement required ChromaDB interface
+- Resolve type errors in vector_store.py for metadata handling
+- Ensure ChromaDB collection operations work with current API version
+- Add proper error handling for ChromaDB operations
+
+#### 6.2.2 Search Implementation & Testing
+- Complete algorithms library ingestion (currently 0 documents due to ChromaDB issues)
+- Verify hybrid search functionality works with ingested content
+- Test search queries: "binary search", "sorting algorithms", "data structures"
+- Validate search result formatting and relevance scores
+
+#### 6.2.3 Integration Validation
+- Test end-to-end ingestion workflow with algorithms library
+- Verify document persistence across server restarts
+- Validate search performance with ingested algorithms documentation
+- Test MCP server search tool functionality
+
 ### Phase 7: Documentation & Examples
 **Priority**: Low
 **Timeline**: 1-2 days
