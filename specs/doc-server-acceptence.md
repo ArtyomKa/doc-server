@@ -29,9 +29,9 @@ This document provides comprehensive acceptance criteria and test specifications
    - Optional provider structure: `tools/`, `resources/` for `FileSystemProvider` discovery
    - Expected structure: `doc_server/{__init__.py,mcp_server.py,ingestion/__init__.py,search/__init__.py}`
 **AC-1.1.4**: Entry points are properly configured in `pyproject.toml` with:
-    - MCP server entry point: `[project.scripts] doc-server = "doc_server.mcp_server:main"`
-    - Entry point is callable after `pip install -e .`
-    - MCP server contains FastMCP server instance with main() function
+     - MCP server entry point: `[project.scripts] doc-server = "doc_server.mcp_server:main"`
+     - Entry point is callable after `uv pip install -e .`
+     - MCP server contains FastMCP server instance with main() function
 **AC-1.1.5**: Development environment is reproducible with requirements.txt
 
 #### 1.2 Dependencies & Environment
@@ -690,7 +690,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          pip install -e ".[dev]"
+          uv pip install -e ".[dev]"
       - name: Run tests
         run: |
           pytest --cov=doc_server --cov-report=xml

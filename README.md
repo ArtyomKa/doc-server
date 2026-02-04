@@ -20,14 +20,14 @@ Doc Server is a comprehensive solution for ingesting, processing, and searching 
 ### Installation
 
 ```bash
-pip install -e .
+uv pip install -e .
 ```
 
 ### Development Setup
 
 ```bash
 # Install development dependencies
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 
 # Run tests
 pytest
