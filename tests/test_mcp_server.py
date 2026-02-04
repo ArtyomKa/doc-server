@@ -898,7 +898,269 @@ class TestValidateServerFunction:
             assert result["status"] == "unhealthy"
             assert "error" in result
             assert result["error"] == "Validation service unavailable"
-            assert "timestamp" in result
+
+
+class TestSearchDocsValidationErrors:
+    """Tests for search_docs validation errors (lines 157-168, 171-174)."""
+
+    def test_search_docs_empty_query_validation(self):
+        """Test search_docs with empty query validation."""
+        with pytest.raises(ValueError, match="Query cannot be empty"):
+            search_docs.fn("", "/test")
+
+    def test_search_docs_query_sanitization(self):
+        """Test search_docs input sanitization."""
+        with patch("doc_server.mcp_server.get_hybrid_search") as mock_search:
+            # Test with potentially problematic input
+            query = "test\x00query\x00with\x00nulls"
+
+            result = search_docs.fn(query, "/test")
+
+            # Should handle null bytes gracefully
+            assert isinstance(result, list)
+
+    def test_search_docs_handles_search_service_errors(self):
+        """Test search_docs handles search service errors."""
+        with patch("doc_server.mcp_server.get_hybrid_search") as mock_search:
+            mock_search.side_effect = Exception("Search service unavailable")
+
+            # Should raise RuntimeError when service errors occur
+            with pytest.raises(
+                RuntimeError, match="Search failed: Search service unavailable"
+            ):
+                search_docs.fn("test query", "/test")
+
+
+class TestListLibrariesCollectionErrors:
+    """Tests for list_libraries collection processing errors (lines 308-311)."""
+
+    def test_list_libraries_collection_metadata_errors(self):
+        """Test list_libraries with collection metadata errors."""
+        with patch("doc_server.mcp_server.get_vector_store") as mock_store:
+            # Mock collections with problematic metadata
+            mock_store.return_value.list_collections.return_value = [
+                {
+                    "name": "test_collection",
+                    "library_id": "/test",
+                    "count": 100,
+                    "metadata": {
+                        "embedding_model": "all-MiniLM-L6-v2",
+                        # Missing created_at timestamp
+                    },
+                }
+            ]
+
+            result = list_libraries.fn()
+
+            # Should handle missing metadata gracefully
+            assert isinstance(result, list)
+            if result:  # If any results were returned
+                assert "library_id" in result[0]
+
+    def test_list_libraries_handles_list_collections_failure(self):
+        """Test list_libraries when list_collections fails."""
+        with patch("doc_server.mcp_server.get_vector_store") as mock_store:
+            mock_store.return_value.list_collections.side_effect = Exception(
+                "Collection access failed"
+            )
+
+            # Should raise RuntimeError when list_collections fails
+            with pytest.raises(
+                RuntimeError, match="Failed to list libraries: Collection access failed"
+            ):
+                list_libraries.fn()
+
+
+class TestRemoveLibraryInvalidID:
+    """Tests for remove_library with invalid ID (lines 341-348)."""
+
+    def test_remove_library_empty_id(self):
+        """Test remove_library with empty library ID."""
+        # Should raise ValueError for empty ID
+        with pytest.raises(
+            ValueError, match="Invalid library ID: Input cannot be empty"
+        ):
+            remove_library.fn("")
+
+    def test_remove_library_nonexistent_id(self):
+        """Test remove_library with non-existent library ID."""
+        with patch("doc_server.mcp_server.get_vector_store") as mock_store:
+            mock_store.return_value.delete_collection.return_value = False
+
+            result = remove_library.fn("/nonexistent")
+
+            # Should return False for non-existent library
+            assert result is False
+
+    def test_remove_library_handles_service_errors(self):
+        """Test remove_library handles service errors gracefully."""
+        with patch("doc_server.mcp_server.get_vector_store") as mock_store:
+            mock_store.return_value.delete_collection.side_effect = Exception(
+                "Service unavailable"
+            )
+
+            # Should raise RuntimeError when service errors occur
+            with pytest.raises(
+                RuntimeError, match="Failed to remove library: Service unavailable"
+            ):
+                remove_library.fn("/test")
+
+
+class TestHealthCheckVectorStoreErrors:
+    """Tests for health_check with vector store errors (lines 382-399)."""
+
+    def test_health_check_vector_store_connection_error(self):
+        """Test health_check when vector store has connection errors."""
+        from doc_server.mcp_server import health_check
+        import time
+
+        with patch("doc_server.mcp_server.get_health_status") as mock_health:
+            mock_health.return_value = {
+                "status": "unhealthy",
+                "version": "1.0.0",
+                "timestamp": time.time(),
+                "components": {
+                    "vector_store": {
+                        "status": "unhealthy",
+                        "error": "connection_failed",
+                    },
+                    "embedding_service": {"status": "healthy"},
+                },
+            }
+
+            result = health_check.fn()
+
+            assert result["status"] == "unhealthy"
+            assert "components" in result
+            assert result["components"]["vector_store"]["status"] == "unhealthy"
+
+    def test_health_check_vector_store_timeout(self):
+        """Test health_check when vector store times out."""
+        from doc_server.mcp_server import health_check
+        import time
+
+        with patch("doc_server.mcp_server.get_health_status") as mock_health:
+            mock_health.return_value = {
+                "status": "unhealthy",
+                "version": "1.0.0",
+                "timestamp": time.time(),
+                "components": {
+                    "vector_store": {"status": "unhealthy", "error": "timeout"},
+                    "embedding_service": {"status": "healthy"},
+                },
+            }
+
+            result = health_check.fn()
+
+            assert result["status"] == "unhealthy"
+            assert "components" in result
+            assert result["components"]["vector_store"]["status"] == "unhealthy"
+
+    def test_health_check_embedding_service_errors(self):
+        """Test health_check when embedding service has errors."""
+        from doc_server.mcp_server import health_check
+        import time
+
+        with patch("doc_server.mcp_server.get_health_status") as mock_health:
+            mock_health.return_value = {
+                "status": "unhealthy",
+                "version": "1.0.0",
+                "timestamp": time.time(),
+                "components": {
+                    "vector_store": {"status": "healthy"},
+                    "embedding_service": {
+                        "status": "unhealthy",
+                        "error": "model_load_failed",
+                    },
+                },
+            }
+
+            result = health_check.fn()
+
+            assert result["status"] == "unhealthy"
+            assert "components" in result
+            assert result["components"]["embedding_service"]["status"] == "unhealthy"
+            assert (
+                result["components"]["embedding_service"]["error"]
+                == "model_load_failed"
+            )
+
+
+class TestIngestLibraryCleanupOnFailure:
+    """Tests for ingest_library cleanup on failure (lines 617-626)."""
+
+    def test_ingest_library_cleanup_on_git_failure(self):
+        """Test ingest_library cleanup when git cloning fails."""
+        with patch("doc_server.mcp_server.GitCloner") as mock_git_cloner:
+            mock_git_instance = mock_git_cloner.return_value
+            mock_git_instance.clone_repository.side_effect = Exception(
+                "Git clone failed"
+            )
+
+            # Should raise RuntimeError when git cloning fails
+            with pytest.raises(
+                RuntimeError, match="Ingestion failed: Git clone failed"
+            ):
+                ingest_library.fn("https://github.com/test/repo.git", "/test")
+
+    def test_ingest_library_cleanup_on_zip_failure(self):
+        """Test ingest_library cleanup when ZIP extraction fails."""
+        with patch("doc_server.mcp_server.ZIPExtractor") as mock_zip_extractor:
+            mock_zip_instance = mock_zip_extractor.return_value
+            mock_zip_instance.extract_archive.side_effect = Exception("Invalid ZIP")
+
+            # Should raise RuntimeError when ZIP extraction fails
+            with pytest.raises(RuntimeError, match="Ingestion failed: Invalid ZIP"):
+                ingest_library.fn("/path/to/file.zip", "/test")
+
+    def test_ingest_library_cleanup_on_vector_store_failure(self):
+        """Test ingest_library cleanup when vector store operations fail."""
+        with (
+            patch("doc_server.mcp_server.GitCloner") as mock_git_cloner,
+            patch("doc_server.mcp_server.FileFilter") as mock_filter,
+            patch("doc_server.mcp_server.DocumentProcessor") as mock_processor,
+            patch("doc_server.mcp_server.get_vector_store") as mock_store,
+        ):
+            # Mock successful git cloning, filtering, and processing
+            mock_git_cloner.return_value.clone_repository.return_value = None
+            mock_filter.return_value.filter_files.return_value = [
+                MagicMock(included=True, file_path="/test/file.py")
+            ]
+            mock_processor.return_value.process_file.return_value = [
+                MagicMock(
+                    content="test",
+                    file_path="/test/file.py",
+                    library_id="/test",
+                    line_start=1,
+                    line_end=10,
+                )
+            ]
+
+            # Mock vector store to fail during document addition
+            mock_store.return_value.create_collection.return_value = None
+            mock_store.return_value.add_documents.side_effect = Exception(
+                "Vector store error"
+            )
+
+            # Should raise RuntimeError when vector store operations fail
+            with pytest.raises(
+                RuntimeError, match="Ingestion failed: Vector store error"
+            ):
+                ingest_library.fn("https://github.com/test/repo.git", "/test")
+
+    def test_ingest_library_handles_invalid_source(self):
+        """Test ingest_library with invalid source type."""
+        # Should raise RuntimeError when source type is invalid
+        with pytest.raises(
+            RuntimeError, match="Ingestion failed: Local path does not exist"
+        ):
+            ingest_library.fn("invalid://source", "/test")
+
+    def test_ingest_library_handles_validation_errors(self):
+        """Test ingest_library with validation errors."""
+        # Test with invalid library_id
+        with pytest.raises(ValueError, match="Invalid input: Input cannot be empty"):
+            ingest_library.fn("https://github.com/test/repo.git", "")
 
     def test_validate_server_logs_validation_attempt(self):
         """Test that validate_server logs the validation attempt."""

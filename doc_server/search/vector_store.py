@@ -123,6 +123,45 @@ class ChromaEmbeddingFunction(EmbeddingFunction[Documents]):
             logger.error(f"Failed to generate embeddings for ChromaDB: {e}")
             raise VectorStoreError(f"Embedding generation failed: {e}")
 
+    @staticmethod
+    def name() -> str:
+        """
+        Return the name of the embedding function.
+
+        Returns:
+            String identifier for this embedding function
+        """
+        return "doc_server_chroma"
+
+    def get_config(self) -> dict[str, Any]:
+        """
+        Return the configuration of the embedding function.
+
+        Returns:
+            Serializable configuration dictionary
+        """
+        return {
+            "model_name": self.embedding_service.model_name,
+            "embedding_dimension": self.embedding_service.embedding_dimension,
+        }
+
+    @staticmethod
+    def build_from_config(config: dict[str, Any]) -> "ChromaEmbeddingFunction":
+        """
+        Build a new embedding function from configuration.
+
+        Args:
+            config: Configuration dictionary returned by get_config()
+
+        Returns:
+            New ChromaEmbeddingFunction instance
+        """
+        from .embedding_service import get_embedding_service
+
+        # Get embedding service (will use global instance with current config)
+        embedding_service = get_embedding_service()
+        return ChromaEmbeddingFunction(embedding_service)
+
 
 class ChromaVectorStore:
     """

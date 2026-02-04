@@ -3,6 +3,7 @@ Unit tests for FileFilter module.
 """
 
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -694,3 +695,174 @@ class TestEdgeCases:
 
         result = file_filter.filter_file(str(test_file))
         assert result.included is True
+
+
+class TestFileFilterUncoveredPaths:
+    """Tests for uncovered file_filter edge cases."""
+
+    def test_file_access_permission_errors(
+        self, file_filter: FileFilter, tmp_path: Path
+    ):
+        """Test file filtering with permission errors."""
+        test_file = tmp_path / "restricted.py"
+        test_file.write_text("# Restricted file")
+
+        # Mock stat to raise permission error
+        with mock.patch("pathlib.Path.stat", side_effect=OSError("Permission denied")):
+            with pytest.raises(FileFilterError):
+                file_filter.filter_file(str(test_file))
+
+    def test_gitignore_parsing_failures(self, file_filter: FileFilter, tmp_path: Path):
+        """Test gitignore parsing with invalid patterns."""
+        # Create a gitignore with invalid syntax
+        gitignore_file = tmp_path / ".gitignore"
+        gitignore_file.write_text("**/invalid[unclosed\n*.log\n")
+
+        # Create test directory with gitignore
+        test_dir = tmp_path / "project"
+        test_dir.mkdir()
+        gitignore_file = test_dir / ".gitignore"
+        gitignore_file.write_text("**/invalid[unclosed\n*.log\n")
+
+        test_file = test_dir / "test.py"
+        test_file.write_text("# Test file")
+
+        # Should handle invalid gitignore gracefully
+        result = file_filter.filter_file(str(test_file))
+        assert isinstance(result, FilterResult)
+
+    def test_binary_file_detection_edge_cases(
+        self, file_filter: FileFilter, tmp_path: Path
+    ):
+        """Test binary file detection with edge cases."""
+        # Create file with null bytes
+        binary_file = tmp_path / "mixed.py"
+        binary_file.write_bytes(b"print('hello')\x00\x80\xfe")
+
+        result = file_filter.filter_file(str(binary_file))
+
+        # Should detect as binary and exclude
+        assert not result.included
+        assert "binary" in result.reason.lower()
+
+    def test_large_file_handling(self, file_filter: FileFilter, tmp_path: Path):
+        """Test large file size handling."""
+        large_file = tmp_path / "large.py"
+
+        # Mock file size to be very large
+        with mock.patch("pathlib.Path.stat") as mock_stat:
+            mock_stat.return_value.st_size = 100 * 1024 * 1024  # 100MB
+
+            result = file_filter.filter_file(str(large_file))
+
+            # Should exclude large files
+            assert not result.included
+            assert "size" in result.reason.lower()
+
+    def test_unicode_filename_handling(self, file_filter: FileFilter, tmp_path: Path):
+        """Test handling of Unicode filenames."""
+        unicode_file = tmp_path / "файл.py"  # Cyrillic filename
+        unicode_file.write_text("# Unicode filename")
+
+        result = file_filter.filter_file(str(unicode_file))
+
+        # Should handle Unicode filenames gracefully
+        assert isinstance(result, FilterResult)
+
+    def test_corrupted_symlink_handling(self, file_filter: FileFilter, tmp_path: Path):
+        """Test handling of corrupted symlinks."""
+        # Create a symlink pointing to non-existent target
+        corrupted_link = tmp_path / "broken.py"
+        corrupted_link.symlink_to(tmp_path / "nonexistent.py")
+
+        result = file_filter.filter_file(str(corrupted_link))
+
+        # Should handle broken symlinks gracefully
+        assert isinstance(result, FilterResult)
+
+    def test_file_encoding_detection_errors(
+        self, file_filter: FileFilter, tmp_path: Path
+    ):
+        """Test file encoding detection errors."""
+        # Create file with problematic encoding
+        test_file = tmp_path / "encoding.py"
+
+        # Write bytes that would cause encoding issues
+        with open(test_file, "wb") as f:
+            f.write(b"# Python file with invalid utf-8\xff\xfe\x00")
+
+        result = file_filter.filter_file(str(test_file))
+
+        # Should handle encoding errors gracefully
+        assert isinstance(result, FilterResult)
+
+    def test_gitignore_with_complex_patterns(
+        self, file_filter: FileFilter, tmp_path: Path
+    ):
+        """Test gitignore with complex pattern combinations."""
+        gitignore_file = tmp_path / ".gitignore"
+        gitignore_file.write_text("""
+# Complex patterns
+**/test_*.py
+!test_main.py
+*.temp
+build/**
+docs/**/*.md
+!docs/README.md
+""")
+
+        test_files = [
+            ("test_module.py", False),  # Should be excluded
+            ("test_main.py", True),  # Should be included (negated)
+            ("temp.temp", False),  # Should be excluded
+            ("build/output.o", False),  # Should be excluded
+            ("docs/README.md", True),  # Should be included (negated)
+            ("docs/guide.md", False),  # Should be excluded
+        ]
+
+        # Load the gitignore patterns
+        gitignore_spec = file_filter.load_gitignore(str(gitignore_file))
+
+        for filename, expected_included in test_files:
+            test_file = tmp_path / filename
+            test_file.parent.mkdir(parents=True, exist_ok=True)
+            test_file.write_text(f"# {filename}")
+
+            result = file_filter.filter_file(
+                str(test_file), gitignore_spec, str(tmp_path)
+            )
+            assert result.included == expected_included, f"Failed for {filename}"
+
+    def test_allowlist_edge_cases(self, file_filter: FileFilter, tmp_path: Path):
+        """Test allowlist with edge cases."""
+        # Test case sensitivity
+        case_files = [
+            ("test.PY", True),  # Uppercase extension
+            ("test.Py", True),  # Mixed case
+            ("test.pY", True),  # Mixed case
+            ("test.py", True),  # Normal case
+        ]
+
+        for filename, expected_included in case_files:
+            test_file = tmp_path / filename
+            test_file.write_text(f"# {filename}")
+
+            result = file_filter.filter_file(str(test_file))
+            assert result.included == expected_included, f"Failed for {filename}"
+
+    def test_max_depth_filtering(self, file_filter: FileFilter, tmp_path: Path):
+        """Test max depth filtering."""
+        # Create nested directory structure
+        current_dir = tmp_path
+        for i in range(10):  # Create 10 levels deep
+            current_dir = current_dir / f"level{i}"
+            current_dir.mkdir()
+
+        deep_file = current_dir / "deep.py"
+        deep_file.write_text("# Deep file")
+
+        result = file_filter.filter_file(str(deep_file))
+
+        # Should filter based on depth (assuming reasonable max depth)
+        assert isinstance(result, FilterResult)
+        # Note: The actual inclusion depends on the max_depth setting

@@ -957,3 +957,197 @@ class TestBatchEmbeddingEdgeCases:
 
         assert result.shape == (1, 384)
         assert not np.any(np.isnan(result))
+
+
+class TestUncoveredCriticalPaths:
+    """Tests for specific uncovered lines to improve coverage >90%."""
+
+    @pytest.fixture
+    def embedding_service(self):
+        """Create a temporary embedding service for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(
+                cache_dir=temp_dir, enable_cache=True, cache_size_limit=100
+            )
+            yield service
+
+    def test_gpu_fallback_to_cpu_on_cuda_oom(self, embedding_service):
+        """Test GPU fallback to CPU on CUDA OOM errors (lines 404-417)."""
+        texts = ["Test GPU fallback"]
+
+        # Mock encode_with_timeout to simulate OOM then success
+        with patch.object(embedding_service, "_encode_with_timeout") as mock_encode:
+            # First call fails with CUDA OOM, second succeeds
+            call_count = 0
+
+            def side_effect(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    raise torch.cuda.OutOfMemoryError("CUDA out of memory")
+                return np.random.rand(1, 384).astype(np.float32)
+
+            mock_encode.side_effect = side_effect
+
+            # Mock the device detection to use CUDA
+            with patch.object(embedding_service, "model") as mock_model:
+                mock_model.device = "cuda:0"
+                mock_model.to.return_value = None
+
+                # Should handle GPU error gracefully and retry with smaller batch
+                result = embedding_service._encode_with_retry(
+                    texts, batch_size=1, normalize=True, timeout=30
+                )
+                assert result.shape == (1, 384)
+                assert call_count == 2
+
+    def test_cache_loading_with_corrupted_files(self, embedding_service):
+        """Test cache loading with corrupted files (lines 226-228)."""
+        # Create a corrupted cache file
+        cache_file = (
+            embedding_service.cache_dir
+            / f"{embedding_service.model_name.replace('/', '_')}_cache.pkl"
+        )
+
+        # Write corrupted data
+        with open(cache_file, "wb") as f:
+            f.write(b"corrupted pickle data that cannot be loaded")
+
+        # Create new service to trigger cache loading
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(cache_dir=temp_dir, enable_cache=True)
+
+            # Copy corrupted file to service cache dir
+            service_cache_file = (
+                service.cache_dir / f"{service.model_name.replace('/', '_')}_cache.pkl"
+            )
+            with open(cache_file, "rb") as src, open(service_cache_file, "wb") as dst:
+                dst.write(src.read())
+
+            # Should handle corrupted cache gracefully
+            service._load_cache()
+            assert service.cache == {}  # Should be reset to empty dict
+
+    def test_warmup_timeout_handling(self, embedding_service):
+        """Test warmup timeout handling (lines 161-166)."""
+        # Create a custom service to test warmup timeout
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(cache_dir=temp_dir, enable_cache=False)
+
+            # Mock signal.alarm to simulate timeout
+            with patch("signal.alarm") as mock_alarm:
+                with patch.object(service, "model") as mock_model:
+                    # Make model.encode raise an exception
+                    mock_model.encode.side_effect = Exception("Simulated timeout")
+
+                    # Mock the timeout by triggering alarm path
+                    def alarm_side_effect(seconds):
+                        if seconds > 0:  # Setting alarm
+                            pass
+                        else:  # Canceling alarm
+                            pass
+
+                    mock_alarm.side_effect = alarm_side_effect
+
+                    # Run warmup - should handle timeout gracefully
+                    service._warmup_model()
+
+                    # Should set warmup_time_seconds to None on failure
+                    assert service.warmup_time_seconds is None
+
+    def test_embedding_dimension_mismatch_errors(self, embedding_service):
+        """Test embedding dimension mismatch errors (lines 678-684)."""
+        texts = ["Dimension test"]
+
+        # Mock the encoding to return wrong dimensions
+        with patch.object(embedding_service, "_encode_with_retry") as mock_encode:
+            # Return wrong dimension (256 instead of 384)
+            mock_encode.return_value = np.random.rand(1, 256).astype(np.float32)
+
+            # Should raise dimension mismatch error
+            with pytest.raises(EmbeddingError) as exc_info:
+                embedding_service.get_embeddings(texts)
+
+            assert "dimension mismatch" in str(exc_info.value)
+            assert "expected 384" in str(exc_info.value)
+            assert "got 256" in str(exc_info.value)
+
+    def test_retry_logic_with_different_error_types(self, embedding_service):
+        """Test retry logic with different error types (lines 443-497)."""
+        texts = ["Retry test"]
+
+        # Test that retry logic handles runtime errors properly
+        with patch.object(embedding_service, "_encode_with_timeout") as mock_encode:
+            call_count = 0
+
+            def side_effect(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    # First call fails with a generic runtime error
+                    raise RuntimeError("Runtime error")
+                return np.random.rand(1, 384).astype(np.float32)
+
+            mock_encode.side_effect = side_effect
+
+            # Should handle runtime error and retry
+            result = embedding_service._encode_with_retry(
+                texts, batch_size=1, normalize=True, timeout=30
+            )
+            assert result.shape == (1, 384)
+            assert call_count == 2
+
+        # Test error that gets wrapped in EmbeddingError after retries exhausted
+        with patch.object(embedding_service, "_encode_with_timeout") as mock_encode:
+            mock_encode.side_effect = RuntimeError("Persistent error")
+
+            # Should wrap persistent errors in EmbeddingError after retries
+            with pytest.raises(EmbeddingError):
+                embedding_service._encode_with_retry(
+                    texts, batch_size=1, normalize=True, timeout=30
+                )
+
+    def test_batch_processing_with_empty_inputs(self, embedding_service):
+        """Test batch processing with empty inputs (lines 541-543)."""
+        # Test with empty list
+        result = embedding_service.get_embeddings([])
+        assert result.shape == (0, 384)
+        assert result.dtype == np.float32
+
+        # Test validation that leads to empty validated_texts
+        with patch.object(embedding_service, "_validate_texts") as mock_validate:
+            mock_validate.return_value = []
+
+            result = embedding_service.get_embeddings(["input"])
+            assert result.shape == (0, 384)
+            assert result.dtype == np.float32
+
+    def test_cache_corruption_during_save(self, embedding_service):
+        """Test handling of cache corruption during save operations."""
+        texts = ["Cache corruption test"]
+
+        # Generate some embeddings first
+        embedding_service.get_embeddings(texts)
+
+        # Mock file operations to raise error during save
+        with patch("builtins.open", side_effect=IOError("Disk full")):
+            # Should handle save errors gracefully
+            embedding_service._save_cache()
+
+            # Cache should still be in memory
+            stats = embedding_service.get_cache_stats()
+            assert stats["cached_embeddings"] >= 1
+
+    def test_model_device_switching_edge_cases(self, embedding_service):
+        """Test edge cases in model device switching."""
+        texts = ["Device switching test"]
+
+        # Test device switching failures by mocking the model.to method
+        with patch.object(embedding_service.model, "to") as mock_to:
+            mock_to.side_effect = RuntimeError("Device switch failed")
+
+            # Should handle device switching failures by wrapping in EmbeddingError
+            with pytest.raises(EmbeddingError):
+                embedding_service._encode_with_retry(
+                    texts, batch_size=1, normalize=True, timeout=30
+                )
