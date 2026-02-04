@@ -385,6 +385,61 @@ class FileFilter:
 
         return results
 
+    def filter_files(
+        self,
+        files: list[str | Path],
+        gitignore: PathSpec | None = None,
+        base_path: str | None = None,
+    ) -> list[FilterResult]:
+        """
+        Filter a list of files and return detailed results.
+
+        Args:
+            files: List of file paths to filter
+            gitignore: Optional PathSpec from .gitignore patterns
+            base_path: Base directory path for gitignore matching
+
+        Returns:
+            list[FilterResult]: List of filtering results for all files
+        """
+        results: list[FilterResult] = []
+
+        for file_path in files:
+            try:
+                result = self.filter_file(str(file_path), gitignore, base_path)
+                results.append(result)
+            except FileFilterError as exc:
+                logger.warning(
+                    "Failed to filter file",
+                    path=str(file_path),
+                    error=str(exc),
+                )
+                # Create a result with failure info
+                path_obj = Path(file_path)
+                results.append(
+                    FilterResult(
+                        file_path=str(file_path),
+                        included=False,
+                        reason=f"Filtering error: {exc}",
+                        extension=path_obj.suffix.lower(),
+                        size_bytes=(
+                            path_obj.stat().st_size if path_obj.exists() else 0
+                        ),
+                        is_binary=None,
+                        gitignore_matched=False,
+                    )
+                )
+
+        included_count = sum(1 for r in results if r.included)
+        logger.info(
+            "File filtering complete",
+            total_files=len(results),
+            included=included_count,
+            excluded=len(results) - included_count,
+        )
+
+        return results
+
     def _check_extension(self, file_path: Path) -> bool:
         """
         Check if file extension is in the allowlist.

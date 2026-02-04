@@ -103,6 +103,10 @@ class DocumentProcessor:
             library_id=library_id,
         )
 
+        # Convert to Path object if needed
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+
         try:
             # Read file with encoding detection
             content = self._read_with_encoding(file_path)

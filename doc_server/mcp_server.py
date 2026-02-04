@@ -518,7 +518,7 @@ def ingest_library(source: str, library_id: str) -> dict[str, Any]:
         all_files = list(extraction_path.rglob("*"))
         files = [f for f in all_files if f.is_file()]
 
-        filtered_files = file_filter.filter_files(files, base_path=extraction_path)
+        filtered_files = file_filter.filter_files(files, base_path=str(extraction_path))
         included_files = [f for f in filtered_files if f.included]
 
         logger.info(
