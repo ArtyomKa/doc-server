@@ -13,13 +13,32 @@ from pathlib import Path
 from typing import Any
 
 import chromadb
-from chromadb.config import Settings as ChromaSettings
+from chromadb.api.types import (
+    Documents,
+    Embeddings,
+    QueryResult,
+    GetResult,
+    Include,
+    Metadata,
+    WhereDocument,
+)
 from chromadb.errors import ChromaError, NotFoundError
+from chromadb import EmbeddingFunction, Collection
 
 from ..config import settings
 from .embedding_service import EmbeddingService, get_embedding_service
 
 logger = logging.getLogger(__name__)
+
+
+def _to_metadata(data: dict[str, Any]) -> Metadata:
+    """Convert a dictionary to ChromaDB Metadata type."""
+    return dict(data)
+
+
+def _to_include_list(include_fields: list[str]) -> Include:
+    """Convert a list of include fields to proper Include type."""
+    return include_fields  # type: ignore[return-value]
 
 
 class VectorStoreError(Exception):
@@ -70,8 +89,13 @@ class CollectionAlreadyExistsError(VectorStoreError):
     pass
 
 
-class ChromaEmbeddingFunction:
-    """Custom embedding function adapter for ChromaDB."""
+class ChromaEmbeddingFunction(EmbeddingFunction[Documents]):
+    """
+    Custom embedding function adapter for ChromaDB.
+
+    This class implements the EmbeddingFunction protocol required by ChromaDB
+    for custom embedding functions.
+    """
 
     def __init__(self, embedding_service: EmbeddingService):
         """
@@ -81,11 +105,8 @@ class ChromaEmbeddingFunction:
             embedding_service: EmbeddingService instance for generating embeddings
         """
         self.embedding_service = embedding_service
-        self.name = "doc-server-embedding"
-        # Add name attribute for ChromaDB compatibility
-        self.model = embedding_service.model
 
-    def __call__(self, input: list[str]) -> list[list[float]]:
+    def __call__(self, input: Documents) -> Embeddings:
         """
         Generate embeddings for the given texts.
 
@@ -143,16 +164,11 @@ class ChromaVectorStore:
         # Create ChromaDB embedding function adapter
         self.embedding_function = ChromaEmbeddingFunction(self.embedding_service)
 
-        # Configure ChromaDB settings
-        self.chroma_settings = ChromaSettings(
-            persist_directory=str(self.persist_directory),
-            allow_reset=True,
-            anonymized_telemetry=False,
-            **(chroma_settings or {}),
-        )
+        # Configure ChromaDB path
+        chroma_path = str(self.persist_directory)
 
         # Initialize ChromaDB client with retry logic
-        self.client = self._initialize_client()
+        self.client = self._initialize_client(chroma_path)
 
         # Ensure persist directory exists
         self.persist_directory.mkdir(parents=True, exist_ok=True)
@@ -161,9 +177,12 @@ class ChromaVectorStore:
             f"ChromaVectorStore initialized with persist directory: {self.persist_directory}"
         )
 
-    def _initialize_client(self) -> chromadb.PersistentClient:
+    def _initialize_client(self, persist_path: str) -> chromadb.PersistentClient:
         """
         Initialize ChromaDB client with retry logic.
+
+        Args:
+            persist_path: Path to the persistent storage directory
 
         Returns:
             Initialized ChromaDB PersistentClient
@@ -178,7 +197,7 @@ class ChromaVectorStore:
                 logger.debug(
                     f"Attempting to initialize ChromaDB client (attempt {attempt + 1})"
                 )
-                client = chromadb.PersistentClient(settings=self.chroma_settings)
+                client = chromadb.PersistentClient(path=persist_path)
 
                 # Test the connection
                 client.heartbeat()
@@ -306,7 +325,7 @@ class ChromaVectorStore:
         library_id: str,
         metadata: dict[str, Any] | None = None,
         get_or_create: bool = False,
-    ) -> chromadb.Collection:
+    ) -> Collection:
         """
         Create a new collection for a library.
 
@@ -340,7 +359,7 @@ class ChromaVectorStore:
             )
 
             def _create():
-                kwargs = {
+                kwargs: dict[str, Any] = {
                     "name": collection_name,
                     "metadata": collection_metadata,
                 }
@@ -362,7 +381,7 @@ class ChromaVectorStore:
                 f"Failed to create collection for library '{library_id}': {e}"
             )
 
-    def get_collection(self, library_id: str) -> chromadb.Collection:
+    def get_collection(self, library_id: str) -> Collection:
         """
         Get an existing collection by library ID.
 
@@ -383,7 +402,7 @@ class ChromaVectorStore:
             )
 
             def _get():
-                kwargs = {
+                kwargs: dict[str, Any] = {
                     "name": collection_name,
                 }
                 if self.embedding_function is not None:
@@ -549,7 +568,7 @@ class ChromaVectorStore:
                 batch_end = i + batch_size
                 batch_docs = documents[i:batch_end]
                 batch_ids = ids[i:batch_end]
-                batch_metas = metadatas[i:batch_end]
+                batch_metas = [_to_metadata(m) for m in metadatas[i:batch_end]]
 
                 logger.debug(
                     f"Processing batch {i // batch_size + 1}: {len(batch_docs)} documents"
@@ -643,8 +662,8 @@ class ChromaVectorStore:
                     query_texts=query_texts,
                     n_results=n_results,
                     where=where,
-                    where_document=where_document,
-                    include=include,
+                    where_document=where_document,  # type: ignore[arg-type]
+                    include=_to_include_list(include),
                 )
 
             results = self._retry_operation(_query)
@@ -657,7 +676,7 @@ class ChromaVectorStore:
                 f"Query returned {total_results} results for library '{library_id}'"
             )
 
-            return results
+            return dict(results)
 
         except Exception as e:
             if isinstance(e, CollectionNotFoundError):
@@ -706,7 +725,7 @@ class ChromaVectorStore:
                     where=where,
                     limit=limit,
                     offset=offset,
-                    include=include,
+                    include=_to_include_list(include),
                 )
 
             results = self._retry_operation(_get)
@@ -717,7 +736,7 @@ class ChromaVectorStore:
                 f"Retrieved {total_results} documents from library '{library_id}'"
             )
 
-            return results
+            return dict(results)
 
         except Exception as e:
             if isinstance(e, CollectionNotFoundError):
@@ -805,13 +824,16 @@ class ChromaVectorStore:
             current_time = time.time()
 
             if metadatas is not None:
-                for metadata in metadatas:
+                converted_metas = [_to_metadata(m) for m in metadatas]
+                for metadata in converted_metas:
                     metadata.update(
                         {
                             "updated_at": current_time,
                             "library_id": library_id,
                         }
                     )
+            else:
+                converted_metas = None
 
             logger.debug(f"Updating {len(ids)} documents in library '{library_id}'")
 
@@ -819,7 +841,7 @@ class ChromaVectorStore:
                 collection.update(
                     ids=ids,
                     documents=documents,
-                    metadatas=metadatas,
+                    metadatas=converted_metas,
                 )
 
             self._retry_operation(_update)

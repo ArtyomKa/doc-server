@@ -151,7 +151,9 @@ class TestChromaEmbeddingFunction:
 
         result = func(["text1", "text2"])
 
-        assert result == [[0.1, 0.2], [0.3, 0.4]]
+        # Convert result to list for comparison since embeddings return numpy arrays
+        result_list = [list(r) for r in result]
+        assert result_list == [[0.1, 0.2], [0.3, 0.4]]
         mock_embedding_service.get_embeddings.assert_called_once_with(
             ["text1", "text2"]
         )
@@ -1120,10 +1122,12 @@ class TestInitializeClient:
         mock_client.heartbeat.return_value = True
         mock_client_class.return_value = mock_client
 
-        result = vector_store._initialize_client()
+        result = vector_store._initialize_client(str(vector_store.persist_directory))
 
         assert result == mock_client
-        mock_client_class.assert_called_once_with(settings=vector_store.chroma_settings)
+        mock_client_class.assert_called_once_with(
+            path=str(vector_store.persist_directory)
+        )
         mock_client.heartbeat.assert_called_once()
 
     @patch("doc_server.search.vector_store.chromadb.PersistentClient")
@@ -1136,7 +1140,7 @@ class TestInitializeClient:
         mock_client.heartbeat.return_value = True
         mock_client_class.side_effect = [Exception("First failure"), mock_client]
 
-        result = vector_store._initialize_client()
+        result = vector_store._initialize_client(str(vector_store.persist_directory))
 
         assert result == mock_client
         assert mock_client_class.call_count == 2
@@ -1153,7 +1157,7 @@ class TestInitializeClient:
         with pytest.raises(
             VectorStoreConnectionError, match="Failed to initialize ChromaDB client"
         ):
-            vector_store._initialize_client()
+            vector_store._initialize_client(str(vector_store.persist_directory))
 
         assert mock_client_class.call_count == 2  # max_retries is 2 in test fixture
 

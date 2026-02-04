@@ -561,6 +561,23 @@ def test_shell_completion():
 **AC-6.1.4**: Tests use proper fixtures and setup/teardown
 **AC-6.1.5**: Test data is isolated and reproducible
 
+##### 6.1.1 ChromaDB Compatibility & Search Implementation
+**AC-6.1.1.1**: ChromaEmbeddingFunction implements all required ChromaDB interface methods
+**AC-6.1.1.2**: Vector store operations work without type errors
+**AC-6.1.1.3**: ChromaDB collection creation and management functions correctly
+**AC-6.1.1.4**: Proper error handling for ChromaDB operation failures
+**AC-6.1.1.5**: Compatibility with current ChromaDB API version
+**AC-6.1.1.6**: Algorithms library ingestion completes successfully with >400 documents
+**AC-6.1.1.7**: Search queries return relevant results from algorithms documentation
+**AC-6.1.1.8**: Search results include proper metadata (file paths, relevance scores, line numbers)
+**AC-6.1.1.9**: Hybrid search combines vector similarity and keyword matching effectively
+**AC-6.1.1.10**: Search performance meets <500ms response time targets
+**AC-6.1.1.11**: End-to-end ingestion workflow works from git clone to vector storage
+**AC-6.1.1.12**: Document persistence verified across server restarts
+**AC-6.1.1.13**: MCP server search tool responds correctly to queries
+**AC-6.1.1.14**: Search functionality tested with sample queries (binary search, sorting algorithms)
+**AC-6.1.1.15**: Error scenarios handled gracefully with informative messages
+
 #### 6.2 Integration Tests
 **AC-6.2.1**: End-to-end ingestion works with pandas and fastapi repositories
 **AC-6.2.2**: Search accuracy validated against known document sets
@@ -574,90 +591,6 @@ def test_shell_completion():
 **AC-6.3.3**: CI/CD pipeline runs all tests automatically
 **AC-6.3.4**: Test documentation covers running and extending tests
 **AC-6.3.5**: Performance regression tests prevent degradations
-
-### Phase 6.2: ChromaDB Compatibility & Search Implementation
-
-### Acceptance Criteria
-
-#### 6.2.1 ChromaDB API Compatibility
-**AC-6.2.1.1**: ChromaEmbeddingFunction implements all required ChromaDB interface methods
-**AC-6.2.1.2**: Vector store operations work without type errors
-**AC-6.2.1.3**: ChromaDB collection creation and management functions correctly
-**AC-6.2.1.4**: Proper error handling for ChromaDB operation failures
-**AC-6.2.1.5**: Compatibility with current ChromaDB API version
-
-#### 6.2.2 Search Implementation & Testing
-**AC-6.2.2.1**: Algorithms library ingestion completes successfully with >400 documents
-**AC-6.2.2.2**: Search queries return relevant results from algorithms documentation
-**AC-6.2.2.3**: Search results include proper metadata (file paths, relevance scores, line numbers)
-**AC-6.2.2.4**: Hybrid search combines vector similarity and keyword matching effectively
-**AC-6.2.2.5**: Search performance meets <500ms response time targets
-
-#### 6.2.3 Integration Validation
-**AC-6.2.3.1**: End-to-end ingestion workflow works from git clone to vector storage
-**AC-6.2.3.2**: Document persistence verified across server restarts
-**AC-6.2.3.3**: MCP server search tool responds correctly to queries
-**AC-6.2.3.4**: Search functionality tested with sample queries (binary search, sorting algorithms)
-**AC-6.2.3.5**: Error scenarios handled gracefully with informative messages
-
-### Test Specifications
-
-#### ChromaDB Compatibility Tests
-```python
-# tests/test_chromadb_compatibility.py
-def test_chroma_embedding_function_interface():
-    """Test ChromaEmbeddingFunction implements required interface"""
-    
-def test_vector_store_type_compatibility():
-    """Test vector store operations work with current ChromaDB API"""
-    
-def test_collection_management_compatibility():
-    """Test collection CRUD operations work correctly"""
-    
-def test_error_handling():
-    """Test proper error handling for ChromaDB failures"""
-
-def test_api_version_compatibility():
-    """Test compatibility with installed ChromaDB version"""
-```
-
-#### Search Implementation Tests
-```python
-# tests/test_algorithms_search.py
-def test_algorithms_ingestion_completion():
-    """Test algorithms library ingests completely"""
-    
-def test_search_relevance():
-    """Test search returns relevant algorithms documentation"""
-    
-def test_search_metadata():
-    """Test search results include proper metadata"""
-    
-def test_hybrid_search_functionality():
-    """Test hybrid search combines vector and keyword effectively"""
-    
-def test_search_performance():
-    """Test search response times meet targets"""
-```
-
-#### Integration Validation Tests
-```python
-# tests/test_search_integration.py
-def test_end_to_end_ingestion():
-    """Test complete ingestion workflow"""
-    
-def test_document_persistence():
-    """Test documents persist across restarts"""
-    
-def test_mcp_search_tool():
-    """Test MCP server search tool functionality"""
-    
-def test_sample_queries():
-    """Test search with algorithm-specific queries"""
-    
-def test_error_scenarios():
-    """Test error handling in search workflows"""
-```
 
 ### Test Specifications
 
