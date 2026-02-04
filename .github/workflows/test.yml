@@ -29,7 +29,7 @@ jobs:
 
       - name: Install linting tools
         run: |
-          uv pip install black isort ruff mypy
+          uv pip install --system black isort ruff mypy
 
       - name: Run Black
         run: black --check doc_server/ tests/
@@ -163,7 +163,7 @@ jobs:
 
       - name: Install security tools
         run: |
-          uv pip install bandit safety
+          uv pip install --system bandit safety
 
       - name: Run Bandit
         run: bandit -r doc_server/ -f json -o bandit_report.json
