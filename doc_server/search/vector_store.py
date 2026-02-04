@@ -81,6 +81,9 @@ class ChromaEmbeddingFunction:
             embedding_service: EmbeddingService instance for generating embeddings
         """
         self.embedding_service = embedding_service
+        self.name = "doc-server-embedding"
+        # Add name attribute for ChromaDB compatibility
+        self.model = embedding_service.model
 
     def __call__(self, input: list[str]) -> list[list[float]]:
         """
