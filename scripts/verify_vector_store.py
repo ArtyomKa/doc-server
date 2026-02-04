@@ -1,6 +1,45 @@
 #!/usr/bin/env python3
 """
 Verification script for Phase 3.2 (Vector Store Module) acceptance criteria.
+
+Purpose:
+- Validates ChromaDB vector store implementation against AC-3.2 requirements
+- Provides manual verification complementing automated tests
+- Documents expected behavior for each acceptance criterion
+
+What it tests:
+1. AC-3.2.1: Collection Management by Library ID
+   - Verifies collections are created and retrieved by normalized library ID
+   - Tests library ID normalization (e.g., /pandas/v1.2.3 -> normalized)
+
+2. AC-3.2.2: Persistent Storage
+   - Validates data persists across ChromaVectorStore instances
+   - Simulates server restart by creating new instances with same persist_directory
+
+3. AC-3.2.3: Collection CRUD Operations
+   - CREATE: Creates collections and adds documents
+   - READ: Retrieves collections and queries documents
+   - UPDATE: Updates existing documents
+   - DELETE: Removes documents and entire collections
+
+4. AC-3.2.4: HNSW Configuration
+   - Verifies ChromaDB's HNSW (Hierarchical Navigable Small World) index works
+   - Tests vector similarity search functionality
+
+5. AC-3.2.5: Scaling Limits
+   - Tests batch processing with 500 documents
+   - Validates collection count and query performance
+
+6. Integration Tests:
+   - EmbeddingService integration via ChromaEmbeddingFunction
+   - Error handling and custom exception hierarchy
+
+Usage:
+    python scripts/verify_vector_store.py
+
+Exit Codes:
+    0: All acceptance criteria met
+    1: One or more acceptance criteria failed
 """
 
 import sys
