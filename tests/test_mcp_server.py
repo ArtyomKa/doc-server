@@ -796,3 +796,122 @@ class TestIngestLibraryErrorHandling:
 
         with pytest.raises(RuntimeError, match="Ingestion failed"):
             ingest_library.fn("/test/path", "/test")
+
+
+class TestListLibrariesPartialErrors:
+    """Tests for list_libraries with partial collection errors."""
+
+    def test_list_libraries_handles_partial_collection_errors(self):
+        """Test that individual collection processing errors are handled gracefully."""
+        with patch("doc_server.mcp_server.get_vector_store") as mock_store:
+            # Mock collections with one that will cause an error
+            mock_store.return_value.list_collections.return_value = [
+                {
+                    "name": "good_collection",
+                    "library_id": "/good",
+                    "count": 100,
+                    "metadata": {
+                        "embedding_model": "all-MiniLM-L6-v2",
+                        "created_at": 1234567890.0,
+                    },
+                },
+                {
+                    "name": "bad_collection",
+                    # Missing required fields that will cause an error
+                    "count": 50,
+                    # No metadata or other required fields
+                },
+                {
+                    "name": "another_good",
+                    "library_id": "/another",
+                    "count": 75,
+                    "metadata": {
+                        "embedding_model": "all-MiniLM-L6-v2",
+                        "created_at": 1234567891.0,
+                    },
+                },
+            ]
+
+            result = list_libraries.fn()
+
+            # Should process the good collections and skip the bad one
+            assert isinstance(result, list)
+            assert len(result) >= 2  # At least 2 good collections
+
+            # Verify good collections are processed correctly
+            good_libs = [
+                lib for lib in result if lib["library_id"] in ["/good", "/another"]
+            ]
+            assert len(good_libs) == 2
+
+
+class TestHealthCheckErrors:
+    """Tests for health_check error handling."""
+
+    def test_health_check_returns_error_status_on_exception(self):
+        """Test that health_check returns error status when health check fails."""
+        from doc_server.mcp_server import health_check
+        import time
+
+        with patch("doc_server.mcp_server.get_health_status") as mock_health:
+            mock_health.side_effect = Exception("Health check failed")
+
+            result = health_check.fn()
+
+            assert result["status"] == "unhealthy"
+            assert "error" in result
+            assert result["error"] == "Health check failed"
+            assert "timestamp" in result
+            assert result["timestamp"] <= time.time() + 1  # Allow for small timing diff
+
+
+class TestValidateServerFunction:
+    """Tests for validate_server functionality."""
+
+    def test_validate_server_success(self):
+        """Test validate_server returns success when validation passes."""
+        from doc_server.mcp_server import validate_server
+
+        with patch("doc_server.mcp_server.validate_startup") as mock_validate:
+            mock_validate.return_value = {
+                "status": "healthy",
+                "components": {"embedding_service": "ok", "vector_store": "ok"},
+                "timestamp": 1234567890.0,
+            }
+
+            result = validate_server.fn()
+
+            assert result["status"] == "healthy"
+            assert "components" in result
+            assert "timestamp" in result
+
+    def test_validate_server_handles_validation_failure(self):
+        """Test validate_server handles validation failures gracefully."""
+        from doc_server.mcp_server import validate_server
+        import time
+
+        with patch("doc_server.mcp_server.validate_startup") as mock_validate:
+            mock_validate.side_effect = Exception("Validation service unavailable")
+
+            result = validate_server.fn()
+
+            assert result["status"] == "unhealthy"
+            assert "error" in result
+            assert result["error"] == "Validation service unavailable"
+            assert "timestamp" in result
+
+    def test_validate_server_logs_validation_attempt(self):
+        """Test that validate_server logs the validation attempt."""
+        from doc_server.mcp_server import validate_server
+
+        with patch("doc_server.mcp_server.validate_startup") as mock_validate:
+            with patch("doc_server.mcp_server.logger") as mock_logger:
+                mock_validate.return_value = {"status": "healthy"}
+
+                validate_server.fn()
+
+                # Verify logging calls
+                mock_logger.info.assert_any_call("Server validation requested")
+                mock_logger.info.assert_any_call(
+                    "Server validation completed", status="healthy"
+                )

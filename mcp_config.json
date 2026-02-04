@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "doc-server": {
+      "command": "python",
+      "args": ["-m", "doc_server.mcp_server"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "DOC_SERVER_STORAGE_PATH": "${DOC_SERVER_STORAGE_PATH:-~/.doc-server}"
+      }
+    }
+  }
+}

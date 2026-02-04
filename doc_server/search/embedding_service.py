@@ -172,8 +172,11 @@ class EmbeddingService:
             return
 
         finally:
-            # Restore original signal handler
-            signal.signal(signal.SIGALRM, old_handler)
+            # Restore original signal handler (may fail in some environments)
+            try:
+                signal.signal(signal.SIGALRM, old_handler)
+            except (ValueError, OSError):
+                pass  # Ignore signal handler restoration errors
 
         warmup_time = time.time() - start_time
         self.warmup_time_seconds = warmup_time
@@ -358,8 +361,11 @@ class EmbeddingService:
             signal.alarm(0)  # Cancel the alarm
             raise EmbeddingTimeoutError(f"Encoding timed out after {timeout} seconds")
         finally:
-            # Restore original signal handler
-            signal.signal(signal.SIGALRM, old_handler)
+            # Restore original signal handler (may fail in some environments)
+            try:
+                signal.signal(signal.SIGALRM, old_handler)
+            except (ValueError, OSError):
+                pass  # Ignore signal handler restoration errors
 
     def _encode_with_retry(
         self,
@@ -533,11 +539,15 @@ class EmbeddingService:
             raise EmbeddingValidationError(f"Input validation failed: {e}")
 
         if not validated_texts:
-            return np.empty((0, self.embedding_dimension or 384))
+            return np.empty((0, self.embedding_dimension or 384), dtype=np.float32)
 
         # Determine optimal batch size
         if batch_size is None:
             batch_size = self._get_optimal_batch_size(str(self.model.device))
+
+        # Ensure batch_size is valid (at least 1)
+        if batch_size is not None and batch_size < 1:
+            batch_size = 1
 
         embeddings = [None] * len(validated_texts)
         texts_to_encode = []

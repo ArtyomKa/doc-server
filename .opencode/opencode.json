@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+    "mcp": {
+    "doc-server": {
+        "type": "local",
+      "command": ["uv", "run", "doc-server"],
+      "environment": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "DOC_SERVER_STORAGE_PATH": "${DOC_SERVER_STORAGE_PATH:-~/.doc-server}"
+      }
+    }
+  }
+}

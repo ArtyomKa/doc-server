@@ -18,23 +18,24 @@ from structlog.processors import CallsiteParameterAdder
 from .config import settings
 
 
-def _json_serializer(obj: Any) -> bytes:
+def _json_serializer(obj: Any, **kwargs: Any) -> str:
     """
     Fast JSON serializer for production logs.
 
     Uses orjson if available, falls back to json.
+    Accepts additional kwargs for structlog compatibility.
     """
     try:
         import orjson
 
-        return orjson.dumps(
-            obj,
-            option=orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NAIVE_UTC,
-        )
+        # orjson doesn't support sort_keys or other json.dumps kwargs
+        # Filter out incompatible options
+        orjson_opts = orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NAIVE_UTC
+        return orjson.dumps(obj, option=orjson_opts).decode("utf-8")
     except ImportError:
         import json
 
-        return json.dumps(obj, default=str, ensure_ascii=False).encode("utf-8")
+        return json.dumps(obj, default=str, ensure_ascii=False)
 
 
 def configure_structlog() -> None:
@@ -90,7 +91,6 @@ def configure_structlog() -> None:
             # Render as JSON
             structlog.processors.JSONRenderer(
                 serializer=_json_serializer,
-                sort_keys=True,
             ),
         ]
         logger_factory = structlog.stdlib.LoggerFactory()

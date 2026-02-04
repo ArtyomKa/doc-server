@@ -819,3 +819,141 @@ class TestGlobalServiceInstance:
 
         # Should be different instances
         assert service1 is not service2
+
+
+class TestWarmupEdgeCases:
+    """Tests for warmup edge cases."""
+
+    def test_warmup_handles_model_encode_error(self):
+        """Test warmup handles model encode errors gracefully."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(cache_dir=temp_dir, enable_cache=False)
+
+            # Mock model.encode to raise an exception
+            with patch.object(service.model, "encode") as mock_encode:
+                mock_encode.side_effect = Exception("Model encode failed")
+
+                # Should handle the error gracefully
+                service._warmup_model()
+
+                # Warmup time should be None on failure
+                assert service.warmup_time_seconds is None
+
+    def test_warmup_handles_signal_already_set(self):
+        """Test warmup handles signal handler setup edge cases."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(cache_dir=temp_dir, enable_cache=False)
+
+            # Mock signal.signal to raise an error (already set)
+            call_count = [0]  # Use list to store mutable count
+
+            def signal_side_effect(signum, handler):
+                # Raise error on second call (when trying to restore)
+                call_count[0] += 1
+                if call_count[0] > 1:
+                    raise ValueError("Signal already set")
+                return MagicMock()
+
+            with patch("signal.signal") as mock_signal:
+                mock_signal.side_effect = signal_side_effect
+                mock_signal.alarm = MagicMock()
+
+                # Should handle signal errors gracefully
+                try:
+                    service._warmup_model()
+                except Exception as e:
+                    # Should not propagate signal setup errors
+                    pytest.fail(f"Warmup should handle signal errors: {e}")
+
+
+class TestBatchEmbeddingEdgeCases:
+    """Tests for batch embedding edge cases."""
+
+    @pytest.fixture
+    def embedding_service(self):
+        """Create a temporary embedding service for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = EmbeddingService(cache_dir=temp_dir, enable_cache=False)
+            yield service
+
+    def test_batch_embedding_empty_input(self, embedding_service):
+        """Test batch embedding with empty input list."""
+        result = embedding_service.get_embeddings([])
+
+        assert result.shape == (0, 384)
+        assert result.dtype == np.float32
+
+    def test_batch_embedding_all_empty_strings(self, embedding_service):
+        """Test batch embedding with list of empty strings."""
+        texts = ["", "", "   ", ""]
+        result = embedding_service.get_embeddings(texts)
+
+        assert result.shape == (4, 384)
+        assert not np.any(np.isnan(result))
+        assert not np.any(np.isinf(result))
+
+    def test_batch_embedding_single_text(self, embedding_service):
+        """Test batch embedding with single text."""
+        texts = ["Single text for testing"]
+        result = embedding_service.get_embeddings(texts)
+
+        assert result.shape == (1, 384)
+        assert not np.any(np.isnan(result))
+        assert not np.any(np.isinf(result))
+
+    def test_batch_embedding_mixed_valid_invalid(self, embedding_service):
+        """Test batch embedding with mix of valid and problematic texts."""
+        texts = [
+            "Valid text content",
+            "",  # Empty string
+            "Another valid text with content",
+            "a" * 100000,  # Very long text
+        ]
+        result = embedding_service.get_embeddings(texts)
+
+        assert result.shape == (4, 384)
+        assert not np.any(np.isnan(result))
+        assert not np.any(np.isinf(result))
+
+    def test_batch_embedding_cache_disabled_force_recompute(self, embedding_service):
+        """Test batch embedding with cache disabled and force recompute."""
+        texts = ["Test text 1", "Test text 2"]
+
+        # First call
+        result1 = embedding_service.get_embeddings(texts)
+        # Second call with force_recompute
+        result2 = embedding_service.get_embeddings(texts, force_recompute=True)
+
+        # Results should be identical
+        np.testing.assert_array_almost_equal(result1, result2)
+        assert result1.shape == (2, 384)
+
+    def test_batch_embedding_none_batch_size(self, embedding_service):
+        """Test batch embedding with None batch size (auto-detection)."""
+        texts = [f"Test text {i}" for i in range(10)]
+
+        # Should auto-detect optimal batch size
+        result = embedding_service.get_embeddings(texts, batch_size=None)
+
+        assert result.shape == (10, 384)
+        assert not np.any(np.isnan(result))
+
+    def test_batch_embedding_very_large_batch_size(self, embedding_service):
+        """Test batch embedding with very large batch size."""
+        texts = [f"Test text {i}" for i in range(5)]
+
+        # Use batch size larger than input
+        result = embedding_service.get_embeddings(texts, batch_size=100)
+
+        assert result.shape == (5, 384)
+        assert not np.any(np.isnan(result))
+
+    def test_batch_embedding_zero_batch_size_fallback(self, embedding_service):
+        """Test batch embedding handles zero batch size gracefully."""
+        texts = ["Test text"]
+
+        # Should handle invalid batch size and use fallback
+        result = embedding_service.get_embeddings(texts, batch_size=0)
+
+        assert result.shape == (1, 384)
+        assert not np.any(np.isnan(result))
