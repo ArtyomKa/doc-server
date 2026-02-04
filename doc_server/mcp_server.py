@@ -5,9 +5,9 @@ Provides AI-powered documentation search via MCP protocol with
 FastMCP framework, supporting stdio transport for MCP clients.
 """
 
-import logging
 import signal
 import sys
+import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Any
@@ -19,15 +19,19 @@ from .ingestion.document_processor import DocumentProcessor
 from .ingestion.file_filter import FileFilter
 from .ingestion.git_cloner import GitCloner
 from .ingestion.zip_extractor import ZIPExtractor
+from .logging_config import (
+    LogContext,
+    bind_context,
+    configure_structlog,
+    get_logger,
+    unbind_context,
+)
 from .search.hybrid_search import get_hybrid_search
 from .search.vector_store import get_vector_store
 
-# Configure logging
-logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper(), logging.INFO),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
+# Configure structured logging
+configure_structlog()
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -67,19 +71,39 @@ class DocumentResult:
 
 
 @asynccontextmanager
-async def lifespan(app: FastMCP):
-    """Manage server startup and shutdown."""
-    logger.info("Starting doc-server MCP...")
+async def lifespan(app: FastMCP) -> Any:
+    """Manage server startup and shutdown with structured logging."""
+    bind_context(server="doc-server", version="1.0.0")
+
+    start_time = time.time()
+    logger.info("Starting doc-server MCP", operation="startup")
+
     try:
         # Initialize hybrid search service
         search = get_hybrid_search()
+        init_time = time.time() - start_time
+
         logger.info(
-            f"HybridSearch initialized: vector_weight={search.vector_weight}, "
-            f"keyword_weight={search.keyword_weight}"
+            "HybridSearch initialized",
+            operation="initialization",
+            vector_weight=search.vector_weight,
+            keyword_weight=search.keyword_weight,
+            initialization_time_ms=round(init_time * 1000, 2),
         )
         yield
     finally:
-        logger.info("Shutting down doc-server MCP...")
+        shutdown_start = time.time()
+        logger.info("Shutting down doc-server MCP", operation="shutdown")
+
+        # Add any cleanup timing here
+        shutdown_time = time.time() - shutdown_start
+        logger.info(
+            "Shutdown complete",
+            operation="shutdown",
+            shutdown_time_ms=round(shutdown_time * 1000, 2),
+        )
+
+        unbind_context("server", "version")
 
 
 # Create FastMCP server instance
@@ -90,7 +114,7 @@ mcp = FastMCP(
 )
 
 
-def _convert_search_result(result) -> DocumentResult:
+def _convert_search_result(result: Any) -> DocumentResult:
     """Convert SearchResult from hybrid_search to DocumentResult for MCP."""
     return DocumentResult(
         content=result.content,
@@ -119,50 +143,82 @@ def search_docs(query: str, library_id: str, limit: int = 10) -> list[dict[str, 
         >>> search_docs("pandas read_csv", "/pandas")
         >>> search_docs("fastapi routing", "/fastapi", limit=5)
     """
-    # Validate inputs
-    if not query or not query.strip():
-        raise ValueError("Query cannot be empty")
+    # Start timing
+    start_time = time.time()
 
-    if not library_id or not library_id.strip():
-        raise ValueError("Library ID cannot be empty")
+    # Bind context for this operation
+    with LogContext(
+        operation="search_docs",
+        library_id=library_id,
+        limit=limit,
+        query_length=len(query),
+    ):
+        # Validate inputs
+        if not query or not query.strip():
+            raise ValueError("Query cannot be empty")
 
-    # Normalize library_id
-    try:
-        normalized_library_id = settings.normalize_library_id(library_id)
-    except ValueError as e:
-        raise ValueError(f"Invalid library ID: {e}") from e
+        if not library_id or not library_id.strip():
+            raise ValueError("Library ID cannot be empty")
 
-    # Validate limit
-    if limit < 1:
-        limit = 10
-    elif limit > 100:
-        limit = 100
+        # Normalize library_id
+        try:
+            normalized_library_id = settings.normalize_library_id(library_id)
+            bind_context(normalized_library_id=normalized_library_id)
+        except ValueError as e:
+            raise ValueError(f"Invalid library ID: {e}") from e
 
-    logger.info(
-        f"Searching docs: query='{query[:100]}...', library_id={normalized_library_id}, limit={limit}"
-    )
+        # Validate limit
+        if limit < 1:
+            limit = 10
+        elif limit > 100:
+            limit = 100
 
-    try:
-        # Get hybrid search service
-        search = get_hybrid_search()
-
-        # Perform search
-        results = search.search(
-            query=query,
-            library_id=normalized_library_id,
-            n_results=limit,
+        logger.info(
+            "Starting document search",
+            query_preview=query[:100] + "..." if len(query) > 100 else query,
         )
 
-        # Convert to DocumentResult and then to dict
-        document_results = [_convert_search_result(r) for r in results]
-        output = [r.to_dict() for r in document_results]
+        try:
+            # Get hybrid search service
+            search = get_hybrid_search()
 
-        logger.info(f"Found {len(output)} results for query")
-        return output
+            # Perform search
+            search_start = time.time()
+            results = search.search(
+                query=query,
+                library_id=normalized_library_id,
+                n_results=limit,
+            )
+            search_time = time.time() - search_start
 
-    except Exception as e:
-        logger.error(f"Search failed: {e}", exc_info=True)
-        raise RuntimeError(f"Search failed: {e}") from e
+            # Convert to DocumentResult and then to dict
+            document_results = [_convert_search_result(r) for r in results]
+            output = [r.to_dict() for r in document_results]
+
+            # Log completion with timing
+            total_time = time.time() - start_time
+            logger.info(
+                "Document search completed",
+                results_count=len(output),
+                search_time_ms=round(search_time * 1000, 2),
+                total_time_ms=round(total_time * 1000, 2),
+                avg_relevance_score=sum(r.relevance_score for r in document_results)
+                / len(document_results)
+                if document_results
+                else 0,
+            )
+            return output
+
+        except Exception as e:
+            total_time = time.time() - start_time
+            logger.error(
+                "Search failed",
+                error=str(e),
+                error_type=type(e).__name__,
+                total_time_ms=round(total_time * 1000, 2),
+                exc_info=True,
+            )
+            raise RuntimeError(f"Search failed: {e}") from e
 
 
 @dataclass
@@ -307,6 +363,70 @@ def remove_library(library_id: str) -> bool:
     except Exception as e:
         logger.error(f"Failed to remove library: {e}", exc_info=True)
         raise RuntimeError(f"Failed to remove library: {e}") from e
+
+
+@mcp.tool
+def health_check() -> dict[str, Any]:
+    """
+    Check the health status of the doc-server.
+
+    Returns:
+        Health status dictionary with component status and metrics
+
+    Example:
+        >>> health_check()
+        {"status": "healthy", "components": {...}, "timestamp": 1234567890.0}
+    """
+    logger.info("Health check requested")
+
+    try:
+        health = get_health_status()
+        logger.info(
+            "Health check completed",
+            status=health["status"],
+            collection_count=health["components"]
+            .get("vector_store", {})
+            .get("collection_count", 0),
+        )
+        return health
+    except Exception as e:
+        logger.error(f"Health check failed: {e}", exc_info=True)
+        return {
+            "status": "unhealthy",
+            "version": "1.0.0",
+            "timestamp": time.time(),
+            "error": str(e),
+        }
+
+
+@mcp.tool
+def validate_server() -> dict[str, Any]:
+    """
+    Validate server dependencies and configuration.
+
+    Returns:
+        Validation status dictionary with component checks
+
+    Example:
+        >>> validate_server()
+        {"status": "healthy", "components": {...}, "timestamp": 1234567890.0}
+    """
+    logger.info("Server validation requested")
+
+    try:
+        validation = validate_startup()
+        logger.info(
+            "Server validation completed",
+            status=validation["status"],
+        )
+        return validation
+    except Exception as e:
+        logger.error(f"Server validation failed: {e}", exc_info=True)
+        return {
+            "status": "unhealthy",
+            "timestamp": time.time(),
+            "error": str(e),
+        }
 
 
 @mcp.tool
@@ -506,15 +626,170 @@ def ingest_library(source: str, library_id: str) -> dict[str, Any]:
         raise RuntimeError(f"Ingestion failed: {e}") from e
 
 
-def main():
+def validate_startup() -> dict[str, Any]:
+    """
+    Validate all dependencies on startup.
+
+    Returns:
+        Dictionary with validation status and component checks
+    """
+    bind_context(operation="startup_validation")
+
+    logger.info("Validating startup dependencies")
+
+    checks: dict[str, Any] = {
+        "status": "healthy",
+        "components": {},
+        "timestamp": time.time(),
+    }
+
+    # Check 1: Storage paths
+    try:
+        storage_checks: dict[str, Any] = {
+            "storage_path_exists": settings.storage_path.exists(),
+            "storage_path_writable": settings.storage_path.is_dir()
+            or settings.storage_path.parent.is_dir(),
+        }
+
+        # Ensure storage directories exist
+        for path_prop in ["chroma_db_path", "models_path", "libraries_path"]:
+            path = getattr(settings, path_prop)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.mkdir(parents=True, exist_ok=True)
+
+        storage_checks["directories_created"] = True
+        checks["components"]["storage"] = storage_checks
+
+        logger.info("Storage validation complete", **storage_checks)
+
+    except Exception as exc:
+        checks["components"]["storage"] = {"error": str(exc)}
+        checks["status"] = "degraded"
+        logger.error("Storage validation failed", error=str(exc))
+
+    # Check 2: Vector store
+    try:
+        _vector_store = get_vector_store()
+        collections = _vector_store.list_collections()
+        checks["components"]["vector_store"] = {
+            "initialized": True,
+            "collection_count": len(collections),
+        }
+        logger.info(
+            "Vector store validation complete", collection_count=len(collections)
+        )
+    except Exception as exc:
+        checks["components"]["vector_store"] = {"error": str(exc)}
+        checks["status"] = "degraded"
+        logger.error("Vector store validation failed", error=str(exc))
+
+    # Check 3: Hybrid search
+    try:
+        search = get_hybrid_search()
+        checks["components"]["hybrid_search"] = {
+            "initialized": True,
+            "vector_weight": search.vector_weight,
+            "keyword_weight": search.keyword_weight,
+        }
+        logger.info("Hybrid search validation complete")
+    except Exception as exc:
+        checks["components"]["hybrid_search"] = {"error": str(exc)}
+        checks["status"] = "degraded"
+        logger.error("Hybrid search validation failed", error=str(exc))
+
+    unbind_context("operation")
+
+    return checks
+
+
+def get_health_status() -> dict[str, Any]:
+    """
+    Get health status of the server for monitoring.
+
+    Returns:
+        Health status dictionary with component status and metrics
+    """
+    health: dict[str, Any] = {
+        "status": "healthy",
+        "version": "1.0.0",
+        "timestamp": time.time(),
+        "components": {},
+    }
+
+    try:
+        # Check vector store connectivity
+        vector_store = get_vector_store()
+        collections = vector_store.list_collections()
+        health["components"]["vector_store"] = {
+            "status": "healthy",
+            "collection_count": len(collections),
+        }
+
+        # Get collection details
+        collection_details = []
+        for collection in collections:
+            try:
+                collection_details.append(
+                    {
+                        "name": collection.get("name", "unknown"),
+                        "count": collection.get("count", 0),
+                    }
+                )
+            except Exception:
+                collection_details.append(
+                    {
+                        "name": collection.get("name", "unknown"),
+                        "error": "failed to get count",
+                    }
+                )
+
+        health["components"]["collections"] = {
+            "status": "healthy" if collections else "empty",
+            "details": collection_details,
+        }
+
+    except Exception as exc:
+        health["components"]["vector_store"] = {
+            "status": "unhealthy",
+            "error": str(exc),
+        }
+        health["status"] = "unhealthy"
+        logger.error("Health check failed", error=str(exc))
+
+    return health
+
+
+def main() -> None:
     """Main entry point for the MCP server."""
-    # Configure logging based on debug setting
-    if settings.mcp_debug:
-        logging.getLogger("doc_server").setLevel(logging.DEBUG)
-        logging.getLogger("fastmcp").setLevel(logging.DEBUG)
+    startup_start = time.time()
+
+    # Run startup validation
+    bind_context(operation="main")
+    logger.info("Starting doc-server MCP initialization")
+
+    try:
+        validation_result = validate_startup()
+        logger.info(
+            "Startup validation complete",
+            status=validation_result["status"],
+            validation_timestamp=validation_result["timestamp"],
+        )
+
+        if validation_result["status"] == "unhealthy":
+            logger.error("Startup validation failed - server may not function properly")
+
+    except Exception as exc:
+        logger.error("Startup validation failed", error=str(exc), exc_info=True)
+        # Continue anyway - the server may still work partially
+
+    startup_time = time.time() - startup_start
+    logger.info(
+        "Initialization complete",
+        startup_time_ms=round(startup_time * 1000, 2),
+    )
 
     # Setup signal handlers for graceful shutdown
-    def signal_handler(signum, frame):
+    def signal_handler(signum: int, frame: Any) -> None:
         sig_name = signal.Signals(signum).name
         logger.info(f"Received {sig_name}, shutting down gracefully...")
         sys.exit(0)

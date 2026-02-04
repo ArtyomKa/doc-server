@@ -63,6 +63,14 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     log_format: str = "json"
+    log_include_timestamps: bool = True
+    log_include_callsite: bool = True
+    log_performance_timing: bool = True
+
+    # MCP Logging (specific to MCP operations)
+    mcp_log_requests: bool = True
+    mcp_log_responses: bool = False
+    mcp_log_performance: bool = True
 
     # MCP Settings
     mcp_transport: str = "stdio"
