@@ -64,18 +64,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-
-      - name: Cache ChromaDB
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/chroma
-          key: chroma-${{ runner.os }}-${{ matrix.python-version }}
-
-      - name: Cache sentence-transformers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/huggingface
-          key: st-models-${{ runner.os }}-${{ matrix.python-version }}
+          create-virtual-env: true
 
       - name: Install dependencies
         run: |
@@ -112,6 +101,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
+          create-virtual-env: true
 
       - name: Install dependencies
         run: |
@@ -141,6 +131,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
+          create-virtual-env: true
 
       - name: Install dependencies
         run: |
@@ -200,6 +191,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
+          create-virtual-env: true
 
       - name: Install dependencies
         run: |
