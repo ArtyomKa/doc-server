@@ -204,7 +204,7 @@ jobs:
 
       - name: Check coverage
         run: |
-          pytest tests/ --cov=doc_server --cov-report=term-missing --cov-fail-under=90 -q
+          uv run pytest tests/ --cov=doc_server --cov-report=term-missing --cov-fail-under=90 -q
 
   notify:
     name: Notify
