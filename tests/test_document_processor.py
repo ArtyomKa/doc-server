@@ -45,7 +45,8 @@ def test_directory(tmp_path: Path) -> Path:
 
     # Python code file
     code_py = tmp_path / "code.py"
-    code_py.write_text("""def function1():
+    code_py.write_text(
+        """def function1():
     '''This is function 1.'''
     pass
 
@@ -57,11 +58,12 @@ def function2():
 
 class MyClass:
     '''This is a class.'''
-    
+
     def method(self):
         '''This is a method.'''
         pass
-""")
+"""
+    )
 
     # Empty file
     empty_file = tmp_path / "empty.txt"

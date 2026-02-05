@@ -71,12 +71,14 @@ def test_directory(tmp_path: Path) -> Path:
 def gitignore_file(tmp_path: Path) -> Path:
     """Create a .gitignore file for testing."""
     gitignore = tmp_path / ".gitignore"
-    gitignore.write_text("""# Test .gitignore
+    gitignore.write_text(
+        """# Test .gitignore
 *.log
 __pycache__/
 *.pyc
 hidden/
-""")
+"""
+    )
     return gitignore
 
 
@@ -801,7 +803,8 @@ class TestFileFilterUncoveredPaths:
     ):
         """Test gitignore with complex pattern combinations."""
         gitignore_file = tmp_path / ".gitignore"
-        gitignore_file.write_text("""
+        gitignore_file.write_text(
+            """
 # Complex patterns
 **/test_*.py
 !test_main.py
@@ -809,7 +812,8 @@ class TestFileFilterUncoveredPaths:
 build/**
 docs/**/*.md
 !docs/README.md
-""")
+"""
+        )
 
         test_files = [
             ("test_module.py", False),  # Should be excluded

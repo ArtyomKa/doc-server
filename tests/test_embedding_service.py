@@ -604,7 +604,7 @@ class TestTTLFunctionality:
         embedding_service._load_cache()
 
         # Verify old entries were converted to new format
-        for key, value in embedding_service.cache.items():
+        for _key, value in embedding_service.cache.items():
             assert isinstance(value, tuple)
             assert len(value) == 2
             assert isinstance(value[0], np.ndarray)

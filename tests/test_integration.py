@@ -21,7 +21,7 @@ from doc_server.ingestion.document_processor import DocumentChunk, DocumentProce
 from doc_server.ingestion.file_filter import FileFilter
 from doc_server.logging_config import configure_structlog
 from doc_server.mcp_server import DocumentResult
-from doc_server.search.vector_store import ChromaVectorStore
+from doc_server.search.vector_store import ChromaVectorStore, CollectionNotFoundError
 
 # Configure structlog for tests
 configure_structlog()
@@ -509,13 +509,13 @@ class TestSpecialCharacters:
         # Content with various special characters
         special_content = """
         # Special Characters Test
-        
+
         ```python
         def test():
             print("Hello, World! 🌍")
             return "Café résumé"
         ```
-        
+
         - Mathematical: ∑ ∏ ∫ √ π
         - Code: `var_name`, {dict_key}, [list_item]
         """
@@ -552,12 +552,14 @@ class TestSpecialCharacters:
     ):
         """Test handling of tabs and indentation."""
         test_file = temp_storage_dir / "indentation.py"
-        test_file.write_text("""def test():
+        test_file.write_text(
+            """def test():
     if True:
         print("indented")
     else:
         return None
-""")
+"""
+        )
 
         chunks = document_processor.process_file(
             file_path=test_file, library_id="/test"
@@ -616,7 +618,7 @@ class TestEdgeCases:
             vector_store = ChromaVectorStore(persist_directory=temp_storage_dir)
 
             # Querying nonexistent collection should raise CollectionNotFoundError
-            with pytest.raises(Exception):
+            with pytest.raises(CollectionNotFoundError):
                 vector_store.query_documents(
                     library_id="/non_existent", query_texts=["test"]
                 )
@@ -663,7 +665,7 @@ class TestMultipleLibraryHandling:
             assert len(collections) >= 3
 
             # Verify we can find our collections
-            collection_names = [c["name"] for c in collections]
+            _collection_names = [c["name"] for c in collections]
             lib_ids = [c.get("library_id", "") for c in collections]
 
             # At least some should match our libraries

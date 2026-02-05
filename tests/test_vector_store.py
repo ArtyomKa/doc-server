@@ -208,7 +208,7 @@ class TestChromaVectorStoreInitialization:
         mock_client.heartbeat.return_value = True
         mock_client_class.side_effect = [Exception("Connection failed"), mock_client]
 
-        store = ChromaVectorStore(
+        _store = ChromaVectorStore(
             persist_directory=temp_dir,
             embedding_service=mock_embedding_service,
             max_retries=3,
@@ -1102,7 +1102,7 @@ class TestContextManager:
         vector_store.client = mock_client
 
         try:
-            with vector_store as store:
+            with vector_store as _store:
                 raise ValueError("Test error")
         except ValueError:
             pass  # Expected

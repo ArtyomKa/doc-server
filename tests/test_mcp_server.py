@@ -911,7 +911,7 @@ class TestSearchDocsValidationErrors:
 
     def test_search_docs_query_sanitization(self):
         """Test search_docs input sanitization."""
-        with patch("doc_server.mcp_server.get_hybrid_search") as mock_search:
+        with patch("doc_server.mcp_server.get_hybrid_search") as _mock_search:
             # Test with potentially problematic input
             query = "test\x00query\x00with\x00nulls"
 
