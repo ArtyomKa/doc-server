@@ -47,6 +47,8 @@ classifiers = [
      "torch",
      "pytest>=9.0.2",
      "mypy>=1.19.1",
+     "chardet>=5.2.0",
+     "types-chardet>=5.0.4.6",
 ]
 
 [project.optional-dependencies]

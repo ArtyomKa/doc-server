@@ -71,13 +71,12 @@ uv run uvicorn doc_server.mcp_server:app --reload
 uv run uvicorn doc_server.mcp_server:app --host 0.0.0.0 --port 8000
 ```
 
-## Development Workflow
+## Quick Validation (Pre-commit)
 
-1. **Type check**: `uv run mypy doc_server` before commits
-2. **Format**: `uv run black . && uv run isort .`
-3. **Lint**: `uv run ruff check --fix .`
-4. **Test**: `uv run pytest` for functionality
-5. **Iterate**: Use `uv run pytest tests/test_module.py::test_function` for faster feedback
+```bash
+# Run all checks at once
+uv run black . && uv run isort . && uv run ruff check --fix . && uv run mypy doc_server && uv run pytest
+```
 
 ## Common Patterns
 
