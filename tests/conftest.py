@@ -30,11 +30,10 @@ def configure_structlog_for_tests() -> None:
 
     Uses console output to avoid JSON serialization issues in tests.
     """
-    original_stderr = sys.stderr
+    _original_stderr = sys.stderr
 
     def mock_isatty():
         return False
-
 
     original_log_format = os.environ.get("DOC_SERVER_LOG_FORMAT")
     os.environ["DOC_SERVER_LOG_FORMAT"] = "console"

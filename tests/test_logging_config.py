@@ -2,9 +2,6 @@
 Tests for logging configuration module.
 """
 
-
-from structlog import get_logger
-
 from doc_server.logging_config import (
     LogContext,
     bind_context,
