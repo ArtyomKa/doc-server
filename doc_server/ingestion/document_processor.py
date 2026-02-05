@@ -196,7 +196,7 @@ class DocumentProcessor:
 
         # Try chardet if available
         try:
-            import chardet  # type: ignore[import-not-found]
+            import chardet
 
             raw_bytes = file_path.read_bytes()
             detected = chardet.detect(raw_bytes)

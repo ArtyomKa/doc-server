@@ -10,20 +10,20 @@ import re
 import time
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chromadb
+from chromadb import Collection, EmbeddingFunction
 from chromadb.api.types import (
     Documents,
     Embeddings,
-    QueryResult,
-    GetResult,
     Include,
     Metadata,
-    WhereDocument,
 )
 from chromadb.errors import ChromaError, NotFoundError
-from chromadb import EmbeddingFunction, Collection
+
+if TYPE_CHECKING:
+    pass
 
 from ..config import settings
 from .embedding_service import EmbeddingService, get_embedding_service
@@ -121,7 +121,7 @@ class ChromaEmbeddingFunction(EmbeddingFunction[Documents]):
             return embeddings.tolist()
         except Exception as e:
             logger.error(f"Failed to generate embeddings for ChromaDB: {e}")
-            raise VectorStoreError(f"Embedding generation failed: {e}")
+            raise VectorStoreError(f"Embedding generation failed: {e}") from e
 
     @staticmethod
     def name() -> str:
@@ -216,7 +216,7 @@ class ChromaVectorStore:
             f"ChromaVectorStore initialized with persist directory: {self.persist_directory}"
         )
 
-    def _initialize_client(self, persist_path: str) -> chromadb.PersistentClient:
+    def _initialize_client(self, persist_path: str) -> Any:
         """
         Initialize ChromaDB client with retry logic.
 
@@ -321,7 +321,7 @@ class ChromaVectorStore:
         )
         return collection_name
 
-    def _retry_operation(self, operation_func, *args, **kwargs):
+    def _retry_operation(self, operation_func: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Execute an operation with retry logic.
 
@@ -397,7 +397,7 @@ class ChromaVectorStore:
                 f"Creating collection '{collection_name}' for library '{library_id}'"
             )
 
-            def _create():
+            def _create() -> Any:
                 kwargs: dict[str, Any] = {
                     "name": collection_name,
                     "metadata": collection_metadata,
@@ -415,10 +415,10 @@ class ChromaVectorStore:
             if "already exists" in str(e).lower() and not get_or_create:
                 raise CollectionAlreadyExistsError(
                     f"Collection for library '{library_id}' already exists"
-                )
+                ) from e
             raise CollectionCreationError(
                 f"Failed to create collection for library '{library_id}': {e}"
-            )
+            ) from e
 
     def get_collection(self, library_id: str) -> Collection:
         """
@@ -440,7 +440,7 @@ class ChromaVectorStore:
                 f"Getting collection '{collection_name}' for library '{library_id}'"
             )
 
-            def _get():
+            def _get() -> Any:
                 kwargs: dict[str, Any] = {
                     "name": collection_name,
                 }
@@ -456,11 +456,11 @@ class ChromaVectorStore:
         except (NotFoundError, ChromaError) as e:
             raise CollectionNotFoundError(
                 f"Collection for library '{library_id}' not found: {e}"
-            )
+            ) from e
         except Exception as e:
             raise VectorStoreError(
                 f"Failed to get collection for library '{library_id}': {e}"
-            )
+            ) from e
 
     def delete_collection(self, library_id: str) -> bool:
         """
@@ -482,7 +482,7 @@ class ChromaVectorStore:
                 f"Deleting collection '{collection_name}' for library '{library_id}'"
             )
 
-            def _delete():
+            def _delete() -> None:
                 self.client.delete_collection(name=collection_name)
 
             try:
@@ -497,7 +497,7 @@ class ChromaVectorStore:
         except Exception as e:
             raise CollectionDeletionError(
                 f"Failed to delete collection for library '{library_id}': {e}"
-            )
+            ) from e
 
     def list_collections(self) -> list[dict[str, Any]]:
         """
@@ -509,7 +509,7 @@ class ChromaVectorStore:
         try:
             logger.debug("Listing all collections")
 
-            def _list():
+            def _list() -> Any:
                 return self.client.list_collections()
 
             collections = self._retry_operation(_list)
@@ -537,7 +537,7 @@ class ChromaVectorStore:
             return result
 
         except Exception as e:
-            raise VectorStoreError(f"Failed to list collections: {e}")
+            raise VectorStoreError(f"Failed to list collections: {e}") from e
 
     def add_documents(
         self,
@@ -589,7 +589,7 @@ class ChromaVectorStore:
 
             # Add common metadata
             current_time = time.time()
-            for i, metadata in enumerate(metadatas):
+            for _i, metadata in enumerate(metadatas):
                 metadata.update(
                     {
                         "added_at": current_time,
@@ -618,30 +618,43 @@ class ChromaVectorStore:
                     if self.embedding_function is None:
                         embeddings = self.embedding_service.get_embeddings(batch_docs)
 
-                        def _add_batch():
+                        # Bind loop variables in closure using default arguments
+                        def _add_batch(
+                            docs=batch_docs,
+                            ids=batch_ids,
+                            metas=batch_metas,
+                            embs=embeddings,
+                        ) -> None:
                             collection.add(
-                                documents=batch_docs,
-                                ids=batch_ids,
-                                metadatas=batch_metas,
-                                embeddings=embeddings.tolist(),
+                                documents=docs,
+                                ids=ids,
+                                metadatas=metas,
+                                embeddings=embs.tolist(),
                             )
+
+                        self._retry_operation(_add_batch)
+
                     else:
-
-                        def _add_batch():
+                        # Bind loop variables in closure using default arguments
+                        def _add_batch_no_embs(
+                            docs: Any = batch_docs,
+                            ids: Any = batch_ids,
+                            metas: Any = batch_metas,
+                        ) -> None:
                             collection.add(
-                                documents=batch_docs,
-                                ids=batch_ids,
-                                metadatas=batch_metas,
+                                documents=docs,
+                                ids=ids,
+                                metadatas=metas,
                             )
 
-                    self._retry_operation(_add_batch)
+                        self._retry_operation(_add_batch_no_embs)
                     added_ids.extend(batch_ids)
 
                 except Exception as e:
                     logger.error(f"Failed to add batch {i // batch_size + 1}: {e}")
                     raise DocumentAdditionError(
                         f"Failed to add documents to library '{library_id}': {e}"
-                    )
+                    ) from e
 
             logger.info(
                 f"Successfully added {len(added_ids)} documents to library '{library_id}'"
@@ -653,7 +666,7 @@ class ChromaVectorStore:
                 raise
             raise DocumentAdditionError(
                 f"Failed to add documents to library '{library_id}': {e}"
-            )
+            ) from e
 
     def query_documents(
         self,
@@ -696,7 +709,7 @@ class ChromaVectorStore:
                 f"Querying library '{library_id}' with {len(query_texts)} queries, n_results={n_results}"
             )
 
-            def _query():
+            def _query() -> Any:
                 return collection.query(
                     query_texts=query_texts,
                     n_results=n_results,
@@ -708,9 +721,11 @@ class ChromaVectorStore:
             results = self._retry_operation(_query)
 
             # Log query summary
-            total_results = (
-                len(results.get("ids", [[]])[0]) if results.get("ids") else 0
-            )
+            ids_list = results.get("ids", [[]])
+            if ids_list and len(ids_list) > 0:
+                total_results = len(ids_list[0])
+            else:
+                total_results = 0
             logger.debug(
                 f"Query returned {total_results} results for library '{library_id}'"
             )
@@ -720,7 +735,9 @@ class ChromaVectorStore:
         except Exception as e:
             if isinstance(e, CollectionNotFoundError):
                 raise
-            raise DocumentQueryError(f"Failed to query library '{library_id}': {e}")
+            raise DocumentQueryError(
+                f"Failed to query library '{library_id}': {e}"
+            ) from e
 
     def get_documents(
         self,
@@ -758,7 +775,7 @@ class ChromaVectorStore:
 
             logger.debug(f"Getting documents from library '{library_id}'")
 
-            def _get():
+            def _get() -> Any:
                 return collection.get(
                     ids=ids,
                     where=where,
@@ -782,7 +799,7 @@ class ChromaVectorStore:
                 raise
             raise DocumentQueryError(
                 f"Failed to get documents from library '{library_id}': {e}"
-            )
+            ) from e
 
     def delete_documents(
         self,
@@ -813,7 +830,7 @@ class ChromaVectorStore:
 
             logger.debug(f"Deleting documents from library '{library_id}'")
 
-            def _delete():
+            def _delete() -> None:
                 collection.delete(ids=ids, where=where)
 
             self._retry_operation(_delete)
@@ -863,20 +880,22 @@ class ChromaVectorStore:
             current_time = time.time()
 
             if metadatas is not None:
-                converted_metas = [_to_metadata(m) for m in metadatas]
-                for metadata in converted_metas:
-                    metadata.update(
+                converted_metas = []
+                for m in metadatas:
+                    metadata_dict = dict(_to_metadata(m))
+                    metadata_dict.update(
                         {
                             "updated_at": current_time,
                             "library_id": library_id,
                         }
                     )
+                    converted_metas.append(_to_metadata(metadata_dict))
             else:
                 converted_metas = None
 
             logger.debug(f"Updating {len(ids)} documents in library '{library_id}'")
 
-            def _update():
+            def _update() -> None:
                 collection.update(
                     ids=ids,
                     documents=documents,
@@ -910,7 +929,7 @@ class ChromaVectorStore:
         try:
             collection = self.get_collection(library_id)
 
-            def _count():
+            def _count() -> Any:
                 return collection.count()
 
             count = self._retry_operation(_count)
@@ -923,7 +942,7 @@ class ChromaVectorStore:
                 raise
             raise VectorStoreError(
                 f"Failed to count documents in library '{library_id}': {e}"
-            )
+            ) from e
 
     def health_check(self) -> dict[str, Any]:
         """
@@ -945,8 +964,13 @@ class ChromaVectorStore:
 
         try:
             # Check ChromaDB client connection
-            self.client.heartbeat()
-            health_info["client_connected"] = True
+            if hasattr(self.client, "heartbeat"):
+                self.client.heartbeat()
+                health_info["client_connected"] = True
+            else:
+                # Fallback: try to list collections to verify connection
+                self.client.list_collections()
+                health_info["client_connected"] = True
 
             # Check embedding service
             if self.embedding_service:
@@ -965,7 +989,15 @@ class ChromaVectorStore:
 
         except Exception as e:
             health_info["status"] = "unhealthy"
-            health_info["errors"].append(str(e))
+            errors_list = health_info.get("errors", [])
+            if errors_list is None:
+                health_info["errors"] = [str(e)]
+            else:
+                # Ensure errors_list is iterable and convert to list
+                if isinstance(errors_list, list):
+                    health_info["errors"] = errors_list + [str(e)]
+                else:
+                    health_info["errors"] = [str(e)]
 
         return health_info
 
@@ -986,7 +1018,7 @@ class ChromaVectorStore:
             collection = self.get_collection(library_id)
 
             # Get basic info
-            def _get_info():
+            def _get_info() -> Any:
                 return {
                     "count": collection.count(),
                     "metadata": collection.metadata or {},
@@ -1014,7 +1046,7 @@ class ChromaVectorStore:
                 raise
             raise VectorStoreError(
                 f"Failed to get stats for library '{library_id}': {e}"
-            )
+            ) from e
 
     def clear_collection(self, library_id: str) -> bool:
         """
@@ -1033,7 +1065,7 @@ class ChromaVectorStore:
             collection = self.get_collection(library_id)
 
             # Get all document IDs and delete them
-            def _get_all():
+            def _get_all() -> Any:
                 return collection.get(include=[])
 
             result = self._retry_operation(_get_all)
@@ -1041,7 +1073,7 @@ class ChromaVectorStore:
 
             if all_ids:
 
-                def _delete_all():
+                def _delete_all() -> None:
                     collection.delete(ids=all_ids)
 
                 self._retry_operation(_delete_all)
@@ -1095,7 +1127,7 @@ class ChromaVectorStore:
             )
 
             # Get all documents
-            def _get_all():
+            def _get_all() -> Any:
                 return collection.get(include=["documents", "metadatas"])
 
             result = self._retry_operation(_get_all)
@@ -1121,13 +1153,15 @@ class ChromaVectorStore:
         except Exception as e:
             if isinstance(e, CollectionNotFoundError):
                 raise
-            raise VectorStoreError(f"Failed to backup collection '{library_id}': {e}")
+            raise VectorStoreError(
+                f"Failed to backup collection '{library_id}': {e}"
+            ) from e
 
-    def __enter__(self):
+    def __enter__(self) -> "ChromaVectorStore":
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Context manager exit."""
         # ChromaDB PersistentClient doesn't need explicit cleanup
         pass
@@ -1147,7 +1181,7 @@ def get_vector_store() -> ChromaVectorStore:
     return _vector_store
 
 
-def reset_vector_store():
+def reset_vector_store() -> None:
     """Reset the global vector store instance."""
     global _vector_store
     _vector_store = None

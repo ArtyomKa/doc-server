@@ -2,22 +2,22 @@
 Tests for MCP server implementation.
 """
 
-import asyncio
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
 from fastmcp import FastMCP
 
 from doc_server.mcp_server import (
     DocumentResult,
+    LibraryInfo,
     _convert_search_result,
-    mcp,
-    search_docs,
+    _sanitize_input,
+    ingest_library,
     lifespan,
     list_libraries,
+    mcp,
     remove_library,
-    ingest_library,
-    LibraryInfo,
-    _sanitize_input,
+    search_docs,
 )
 from doc_server.search.hybrid_search import SearchResult
 
@@ -289,7 +289,6 @@ class TestLifespanManager:
     @pytest.mark.asyncio
     async def test_lifespan_initializes_search_service(self):
         """Test that lifespan initializes the hybrid search service."""
-        from doc_server.mcp_server import lifespan
 
         with patch("doc_server.mcp_server.get_hybrid_search") as mock_get_search:
             mock_search = MagicMock()
@@ -304,7 +303,6 @@ class TestLifespanManager:
     @pytest.mark.asyncio
     async def test_lifespan_logs_startup(self):
         """Test that lifespan logs startup message."""
-        from doc_server.mcp_server import lifespan
 
         with patch("doc_server.mcp_server.get_hybrid_search") as mock_get_search:
             mock_search = MagicMock()
@@ -329,8 +327,9 @@ class TestMainFunction:
 
     def test_main_uses_stdio_transport(self):
         """Test that main runs with stdio transport by default."""
-        from doc_server.mcp_server import main
         import inspect
+
+        from doc_server.mcp_server import main
 
         source = inspect.getsource(main)
         # Verify that mcp.run() is called (uses stdio by default)
@@ -338,8 +337,9 @@ class TestMainFunction:
 
     def test_main_sets_up_signal_handlers(self):
         """Test that main sets up signal handlers."""
-        from doc_server.mcp_server import main
         import inspect
+
+        from doc_server.mcp_server import main
 
         source = inspect.getsource(main)
         # Verify signal handlers are set up
@@ -597,7 +597,6 @@ class TestIngestLibraryFunction:
 
         # Mock filter to return empty list (no files)
         mock_filter_instance = mock_dependencies["filter"].return_value
-        from doc_server.ingestion.file_filter import FilterResult
 
         mock_filter_instance.filter_files.return_value = []
 
@@ -737,8 +736,9 @@ class TestIngestLibraryErrorHandling:
         """Test that processing errors don't stop ingestion."""
         import tempfile
         from pathlib import Path
-        from doc_server.ingestion.file_filter import FilterResult
+
         from doc_server.ingestion.document_processor import DocumentChunk
+        from doc_server.ingestion.file_filter import FilterResult
 
         mock_store_instance = mock_dependencies["store"].return_value
         mock_store_instance.create_collection.return_value = None
@@ -850,8 +850,9 @@ class TestHealthCheckErrors:
 
     def test_health_check_returns_error_status_on_exception(self):
         """Test that health_check returns error status when health check fails."""
-        from doc_server.mcp_server import health_check
         import time
+
+        from doc_server.mcp_server import health_check
 
         with patch("doc_server.mcp_server.get_health_status") as mock_health:
             mock_health.side_effect = Exception("Health check failed")
@@ -887,8 +888,8 @@ class TestValidateServerFunction:
 
     def test_validate_server_handles_validation_failure(self):
         """Test validate_server handles validation failures gracefully."""
+
         from doc_server.mcp_server import validate_server
-        import time
 
         with patch("doc_server.mcp_server.validate_startup") as mock_validate:
             mock_validate.side_effect = Exception("Validation service unavailable")
@@ -910,7 +911,7 @@ class TestSearchDocsValidationErrors:
 
     def test_search_docs_query_sanitization(self):
         """Test search_docs input sanitization."""
-        with patch("doc_server.mcp_server.get_hybrid_search") as mock_search:
+        with patch("doc_server.mcp_server.get_hybrid_search") as _mock_search:
             # Test with potentially problematic input
             query = "test\x00query\x00with\x00nulls"
 
@@ -1011,8 +1012,9 @@ class TestHealthCheckVectorStoreErrors:
 
     def test_health_check_vector_store_connection_error(self):
         """Test health_check when vector store has connection errors."""
-        from doc_server.mcp_server import health_check
         import time
+
+        from doc_server.mcp_server import health_check
 
         with patch("doc_server.mcp_server.get_health_status") as mock_health:
             mock_health.return_value = {
@@ -1036,8 +1038,9 @@ class TestHealthCheckVectorStoreErrors:
 
     def test_health_check_vector_store_timeout(self):
         """Test health_check when vector store times out."""
-        from doc_server.mcp_server import health_check
         import time
+
+        from doc_server.mcp_server import health_check
 
         with patch("doc_server.mcp_server.get_health_status") as mock_health:
             mock_health.return_value = {
@@ -1058,8 +1061,9 @@ class TestHealthCheckVectorStoreErrors:
 
     def test_health_check_embedding_service_errors(self):
         """Test health_check when embedding service has errors."""
-        from doc_server.mcp_server import health_check
         import time
+
+        from doc_server.mcp_server import health_check
 
         with patch("doc_server.mcp_server.get_health_status") as mock_health:
             mock_health.return_value = {

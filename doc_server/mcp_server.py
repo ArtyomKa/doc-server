@@ -10,6 +10,7 @@ import sys
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
@@ -202,10 +203,12 @@ def search_docs(query: str, library_id: str, limit: int = 10) -> list[dict[str, 
                 results_count=len(output),
                 search_time_ms=round(search_time * 1000, 2),
                 total_time_ms=round(total_time * 1000, 2),
-                avg_relevance_score=sum(r.relevance_score for r in document_results)
-                / len(document_results)
-                if document_results
-                else 0,
+                avg_relevance_score=(
+                    sum(r.relevance_score for r in document_results)
+                    / len(document_results)
+                    if document_results
+                    else 0
+                ),
             )
             return output
 
@@ -449,7 +452,6 @@ def ingest_library(source: str, library_id: str) -> dict[str, Any]:
         {"success": True, "documents_ingested": 50, "library_id": "/my-docs"}
     """
     import tempfile
-    from pathlib import Path
 
     # Sanitize and validate inputs
     try:
@@ -518,7 +520,9 @@ def ingest_library(source: str, library_id: str) -> dict[str, Any]:
         all_files = list(extraction_path.rglob("*"))
         files = [f for f in all_files if f.is_file()]
 
-        filtered_files = file_filter.filter_files(files, base_path=str(extraction_path))
+        filtered_files = file_filter.filter_files(
+            [str(f) for f in files], base_path=str(extraction_path)
+        )
         included_files = [f for f in filtered_files if f.included]
 
         logger.info(
@@ -535,7 +539,7 @@ def ingest_library(source: str, library_id: str) -> dict[str, Any]:
         for i, file_result in enumerate(included_files):
             try:
                 chunks = document_processor.process_file(
-                    file_path=file_result.file_path,
+                    file_path=Path(file_result.file_path),
                     library_id=normalized_library_id,
                 )
                 all_chunks.extend(chunks)

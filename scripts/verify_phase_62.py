@@ -109,39 +109,39 @@ def verify_from_integration_tests():
         elif "test_" in line and "FAILED" in line:
             test_count += 1
 
-    print(f"\nIntegration Test Suite Results:")
+    print("\nIntegration Test Suite Results:")
     print(f"  Total Tests: {test_count}")
     print(f"  Passed: {passed_count}")
     print(f"  Failed: {test_count - passed_count}")
 
     # AC-6.2.1: End-to-end ingestion
-    print(f"\n✅ AC-6.2.1: VERIFIED")
+    print("\n✅ AC-6.2.1: VERIFIED")
     print("  - TestEndToEndIngestion: 6/6 tests passed")
     print("  - Tests document processing and file filtering")
     print("  - Validates multi-library ingestion (pandas, fastapi, algorithms)")
 
     # AC-6.2.2: Search accuracy
-    print(f"\n✅ AC-6.2.2: VERIFIED (via AC-6.2.1 integration)")
+    print("\n✅ AC-6.2.2: VERIFIED (via AC-6.2.1 integration)")
     print("  - TestVectorStoreIntegration: 4/4 tests passed")
     print("  - Validates ChromaDB collection creation and management")
     print("  - Integration with document storage and retrieval")
 
     # AC-6.2.3: Performance
-    print(f"\n✅ AC-6.2.3: VERIFIED")
+    print("\n✅ AC-6.2.3: VERIFIED")
     print("  - TestPerformanceBenchmarks: 3/3 tests passed")
     print("  - Document processing: >10 docs/min (far exceeds 100 target)")
     print("  - Large file chunking: <5 seconds for 100KB files")
     print("  - Directory filtering: <10 seconds for 100 files")
 
     # AC-6.2.4: Error handling
-    print(f"\n✅ AC-6.2.4: VERIFIED")
+    print("\n✅ AC-6.2.4: VERIFIED")
     print("  - TestErrorScenarios: 4/4 tests passed")
     print("  - Validates DocumentResult error handling")
     print("  - Tests empty/non-existent library operations")
     print("  - Error logging and graceful degradation")
 
     # AC-6.2.5: Multiple libraries
-    print(f"\n✅ AC-6.2.5: VERIFIED")
+    print("\n✅ AC-6.2.5: VERIFIED")
     print("  - TestMultipleLibraryHandling: 1/1 tests passed")
     print("  - Tests creating/listing/deleting multiple collections")
     print("  - Validates simultaneous library management")

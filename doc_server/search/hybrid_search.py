@@ -103,7 +103,7 @@ class BM25Scorer:
 
         # Document corpus statistics
         self.corpus_size = 0
-        self.avg_doc_length = 0
+        self.avg_doc_length: float = 0.0
         self.doc_freqs: dict[str, int] = {}
         self.idf: dict[str, float] = {}
         self.doc_lengths: list[int] = []
@@ -162,7 +162,7 @@ class BM25Scorer:
             return 0.0
 
         # Calculate term frequencies for document
-        term_freqs = {}
+        term_freqs: dict[str, int] = {}
         for token in doc_tokens:
             term_freqs[token] = term_freqs.get(token, 0) + 1
 
@@ -819,7 +819,7 @@ def get_hybrid_search() -> HybridSearch:
     return _hybrid_search
 
 
-def reset_hybrid_search():
+def reset_hybrid_search() -> None:
     """Reset the global hybrid search instance."""
     global _hybrid_search
     _hybrid_search = None

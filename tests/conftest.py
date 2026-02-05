@@ -9,12 +9,13 @@ This module provides comprehensive fixtures for:
 """
 
 import os
-import sys
 import shutil
+import sys
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Generator, List, Dict, Optional
-from unittest.mock import MagicMock, patch
+from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -29,12 +30,10 @@ def configure_structlog_for_tests() -> None:
 
     Uses console output to avoid JSON serialization issues in tests.
     """
-    original_stderr = sys.stderr
+    _original_stderr = sys.stderr
 
     def mock_isatty():
         return False
-
-    import os
 
     original_log_format = os.environ.get("DOC_SERVER_LOG_FORMAT")
     os.environ["DOC_SERVER_LOG_FORMAT"] = "console"
@@ -529,7 +528,7 @@ result = bubble_sort([3, 1, 4, 1, 5, 9, 2, 6])
 
 
 @pytest.fixture
-def test_documents() -> List[Dict[str, Any]]:
+def test_documents() -> list[dict[str, Any]]:
     """
     Provide test documents for search testing.
 
@@ -611,7 +610,7 @@ def performance_monitor():
 
     class PerformanceMonitor:
         def __init__(self):
-            self.start_times: Dict[str, float] = {}
+            self.start_times: dict[str, float] = {}
 
         def start(self, name: str) -> None:
             self.start_times[name] = time.perf_counter()
@@ -647,7 +646,6 @@ def test_config():
 @pytest.fixture
 def isolated_environment(monkeypatch):
     """Create an isolated test environment with patched paths."""
-    import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:
         test_home = Path(tmpdir) / "test_home"

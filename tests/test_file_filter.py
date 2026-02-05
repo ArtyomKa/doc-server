@@ -71,12 +71,14 @@ def test_directory(tmp_path: Path) -> Path:
 def gitignore_file(tmp_path: Path) -> Path:
     """Create a .gitignore file for testing."""
     gitignore = tmp_path / ".gitignore"
-    gitignore.write_text("""# Test .gitignore
+    gitignore.write_text(
+        """# Test .gitignore
 *.log
 __pycache__/
 *.pyc
 hidden/
-""")
+"""
+    )
     return gitignore
 
 
@@ -203,9 +205,9 @@ class TestCheckExtension:
         for filename in allowed_files:
             test_file = tmp_path / filename
             test_file.write_text("content")
-            assert file_filter._check_extension(test_file) is True, (
-                f"Failed for {filename}"
-            )
+            assert (
+                file_filter._check_extension(test_file) is True
+            ), f"Failed for {filename}"
 
     def test_disallowed_extension(
         self, file_filter: FileFilter, tmp_path: Path
@@ -801,7 +803,8 @@ class TestFileFilterUncoveredPaths:
     ):
         """Test gitignore with complex pattern combinations."""
         gitignore_file = tmp_path / ".gitignore"
-        gitignore_file.write_text("""
+        gitignore_file.write_text(
+            """
 # Complex patterns
 **/test_*.py
 !test_main.py
@@ -809,7 +812,8 @@ class TestFileFilterUncoveredPaths:
 build/**
 docs/**/*.md
 !docs/README.md
-""")
+"""
+        )
 
         test_files = [
             ("test_module.py", False),  # Should be excluded

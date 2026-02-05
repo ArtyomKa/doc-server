@@ -140,7 +140,7 @@ def test_ac_3_2_3_collection_crud():
         # Verify deletion
         try:
             store.get_collection("crud-test")
-            assert False, "Collection should have been deleted"
+            raise AssertionError("Collection should have been deleted")
         except Exception:
             pass  # Expected
 
@@ -211,11 +211,11 @@ def test_integration_with_embedding_service():
     """Verify integration with EmbeddingService"""
     print("Testing integration with EmbeddingService...")
 
-    from doc_server.search.vector_store import (
-        ChromaVectorStore,
-        ChromaEmbeddingFunction,
-    )
     from doc_server.search.embedding_service import get_embedding_service
+    from doc_server.search.vector_store import (
+        ChromaEmbeddingFunction,
+        ChromaVectorStore,
+    )
 
     with tempfile.TemporaryDirectory() as temp_dir:
         embedding_service = get_embedding_service()
@@ -229,7 +229,7 @@ def test_integration_with_embedding_service():
         assert store.embedding_function.embedding_service is embedding_service
 
         # Test that embedding generation works through the vector store
-        collection = store.create_collection("integration-test")
+        _collection = store.create_collection("integration-test")
         doc_ids = store.add_documents("integration-test", ["Test integration"])
         assert len(doc_ids) == 1
 
@@ -243,8 +243,8 @@ def test_error_handling():
 
     from doc_server.search.vector_store import (
         ChromaVectorStore,
-        CollectionNotFoundError,
         CollectionCreationError,
+        CollectionNotFoundError,
         DocumentAdditionError,
         VectorStoreError,
     )
@@ -255,7 +255,7 @@ def test_error_handling():
         # Test collection not found error
         try:
             store.get_collection("nonexistent")
-            assert False, "Should have raised CollectionNotFoundError"
+            raise AssertionError("Should have raised CollectionNotFoundError")
         except CollectionNotFoundError:
             pass  # Expected
 
