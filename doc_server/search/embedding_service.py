@@ -12,6 +12,7 @@ import pickle
 import signal
 import time
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
@@ -101,7 +102,7 @@ class EmbeddingService:
         self.embedding_dimension = self.model.get_sentence_embedding_dimension()
 
         # Setup caching
-        self.cache = {}
+        self.cache: dict[str, Any] = {}
         if self.enable_cache:
             self.cache_dir = Path(
                 cache_dir or settings.storage_path / "embeddings_cache"
@@ -123,21 +124,21 @@ class EmbeddingService:
             return "cuda" if torch.cuda.is_available() else "cpu"
         return device
 
-    def _optimize_settings(self):
+    def _optimize_settings(self) -> None:
         """Apply performance optimizations based on device."""
         if torch.cuda.is_available():
             torch.backends.cudnn.benchmark = True  # Optimize for consistent input sizes
             torch.set_num_threads(4)  # Limit CPU threads when using GPU
             logger.info("GPU optimizations enabled")
 
-    def _warmup_model(self):
+    def _warmup_model(self) -> None:
         """Warm up the model with dummy inputs for optimal first inference."""
         logger.debug("Warming up embedding model...")
 
         class WarmupTimeoutError(Exception):
             pass
 
-        def timeout_handler(signum, frame):
+        def timeout_handler(signum: int, frame: Any) -> None:
             raise WarmupTimeoutError("Model warmup timed out")
 
         # Set up signal handler for timeout
@@ -178,7 +179,7 @@ class EmbeddingService:
                 pass  # Ignore signal handler restoration errors
 
         warmup_time = time.time() - start_time
-        self.warmup_time_seconds = warmup_time
+        self.warmup_time_seconds = float(warmup_time)
 
         # Log timing with appropriate level
         if warmup_time > 5.0:
@@ -190,7 +191,7 @@ class EmbeddingService:
         """Generate consistent hash for text caching."""
         return hashlib.md5(text.encode("utf-8")).hexdigest()
 
-    def _load_cache(self):
+    def _load_cache(self) -> None:
         """Load embedding cache from disk."""
         cache_file = self.cache_dir / f"{self.model_name.replace('/', '_')}_cache.pkl"
 
@@ -248,7 +249,7 @@ class EmbeddingService:
 
         return len(expired_keys)
 
-    def _save_cache(self):
+    def _save_cache(self) -> None:
         """Save embedding cache to disk."""
         if not self.enable_cache:
             return
@@ -339,7 +340,7 @@ class EmbeddingService:
         class TimeoutError(Exception):
             pass
 
-        def timeout_handler(signum, frame):
+        def timeout_handler(signum: int, frame: Any) -> None:
             raise TimeoutError("Encoding operation timed out")
 
         # Set up signal handler for timeout
@@ -358,7 +359,9 @@ class EmbeddingService:
             return result
         except TimeoutError:
             signal.alarm(0)  # Cancel the alarm
-            raise EmbeddingTimeoutError(f"Encoding timed out after {timeout} seconds")
+            raise EmbeddingTimeoutError(
+                f"Encoding timed out after {timeout} seconds"
+            ) from None
         finally:
             # Restore original signal handler (may fail in some environments)
             try:
@@ -437,7 +440,7 @@ class EmbeddingService:
                     # Already using CPU fallback, still getting OOM (unlikely)
                     raise EmbeddingGPUError(
                         f"CUDA out of memory even with CPU fallback: {e}"
-                    )
+                    ) from e
 
             except RuntimeError as e:
                 error_msg = str(e).lower()
@@ -453,7 +456,7 @@ class EmbeddingService:
                     else:
                         raise EmbeddingGPUError(
                             f"GPU error even with CPU fallback: {e}"
-                        )
+                        ) from e
                 else:
                     # Non-GPU runtime error
                     logger.warning(f"Runtime error on attempt {attempt + 1}: {e}")
@@ -465,7 +468,7 @@ class EmbeddingService:
                     else:
                         raise EmbeddingError(
                             f"Runtime error after {max_retries} attempts: {e}"
-                        )
+                        ) from e
 
             except EmbeddingTimeoutError as e:
                 logger.warning(f"Timeout on attempt {attempt + 1}: {e}")
@@ -481,7 +484,7 @@ class EmbeddingService:
                 else:
                     raise EmbeddingTimeoutError(
                         f"Encoding timed out after {max_retries} attempts"
-                    )
+                    ) from None
 
             except Exception as e:
                 logger.warning(f"Unexpected error on attempt {attempt + 1}: {e}")
@@ -493,7 +496,7 @@ class EmbeddingService:
                 else:
                     raise EmbeddingError(
                         f"Unexpected error after {max_retries} attempts: {e}"
-                    )
+                    ) from e
 
         # This should never be reached due to exceptions above
         raise EmbeddingRetryExhaustedError(
@@ -535,7 +538,7 @@ class EmbeddingService:
             # Re-raise validation errors as-is
             raise
         except Exception as e:
-            raise EmbeddingValidationError(f"Input validation failed: {e}")
+            raise EmbeddingValidationError(f"Input validation failed: {e}") from e
 
         if not validated_texts:
             return np.empty((0, self.embedding_dimension or 384), dtype=np.float32)
@@ -548,9 +551,9 @@ class EmbeddingService:
         if batch_size is not None and batch_size < 1:
             batch_size = 1
 
-        embeddings = [None] * len(validated_texts)
-        texts_to_encode = []
-        indices_to_encode = []
+        embeddings: list[np.ndarray | None] = [None] * len(validated_texts)
+        texts_to_encode: list[str] = []
+        indices_to_encode: list[int] = []
 
         # Check cache for existing embeddings
         if self.enable_cache and not force_recompute:
@@ -592,7 +595,7 @@ class EmbeddingService:
 
             try:
                 # Process texts in batches with error handling
-                new_embeddings = []
+                batch_embeddings_list: list[np.ndarray] = []
                 batch_start = 0
 
                 while batch_start < len(texts_to_encode):
@@ -609,7 +612,7 @@ class EmbeddingService:
                             initial_delay=0.1,
                             timeout=30,
                         )
-                        new_embeddings.extend(batch_embeddings)
+                        batch_embeddings_list.append(batch_embeddings)
 
                     except (
                         EmbeddingTimeoutError,
@@ -631,15 +634,19 @@ class EmbeddingService:
                             zero_embeddings = zero_embeddings / np.linalg.norm(
                                 zero_embeddings, axis=1, keepdims=True
                             )
-                        new_embeddings.extend(zero_embeddings)
+                        batch_embeddings_list.append(zero_embeddings)
 
                     batch_start = batch_end
 
-                new_embeddings = np.array(new_embeddings)
+                # Concatenate all batch embeddings
+                if batch_embeddings_list:
+                    new_embeddings = np.concatenate(batch_embeddings_list, axis=0)
+                else:
+                    new_embeddings = np.empty((0, self.embedding_dimension or 384))
 
                 # Update cache and fill result array
                 for idx, text, embedding in zip(
-                    indices_to_encode, texts_to_encode, new_embeddings
+                    indices_to_encode, texts_to_encode, new_embeddings, strict=True
                 ):
                     embeddings[idx] = embedding
 
@@ -663,7 +670,7 @@ class EmbeddingService:
             result = np.array(embeddings)
         except Exception as e:
             logger.error(f"Failed to convert embeddings to numpy array: {e}")
-            raise EmbeddingError(f"Failed to process embeddings: {e}")
+            raise EmbeddingError(f"Failed to process embeddings: {e}") from e
 
         # Validate result dimensions
         if result.shape[0] != len(validated_texts):
@@ -690,7 +697,7 @@ class EmbeddingService:
         corpus_embeddings: np.ndarray,
         top_k: int = 10,
         score_function: str = "cosine",
-    ) -> list[list[dict]]:
+    ) -> list[list[dict[str, Any]]]:
         """
         Compute similarity between queries and corpus.
 
@@ -750,7 +757,7 @@ class EmbeddingService:
 
         return results
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the embedding cache."""
         self.cache = {}
         if self.enable_cache and self.cache_dir.exists():
@@ -761,7 +768,7 @@ class EmbeddingService:
                 cache_file.unlink()
         logger.info("Embedding cache cleared")
 
-    def get_cache_stats(self) -> dict:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get statistics about the embedding cache."""
         # Count expired entries
         expired_count = 0
@@ -817,7 +824,7 @@ def get_embedding_service() -> EmbeddingService:
     return _embedding_service
 
 
-def reset_embedding_service():
+def reset_embedding_service() -> None:
     """Reset the global embedding service instance."""
     global _embedding_service
     _embedding_service = None
