@@ -208,7 +208,7 @@ jobs:
 
   notify:
     name: Notify
-    needs: [lint, test, performance, integration, security, coverage-check]
+    needs: [lint, test, performance, integration, coverage-check]
     runs-on: ubuntu-latest
     if: always()
     steps:
