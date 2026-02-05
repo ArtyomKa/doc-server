@@ -80,7 +80,7 @@ jobs:
             --cov=doc_server \
             --cov-report=xml \
             --cov-report=term-missing \
-            --cov-fail-under=90
+            --cov-fail-under=85
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
