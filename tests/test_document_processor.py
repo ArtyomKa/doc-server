@@ -3,7 +3,6 @@ Unit tests for DocumentProcessor module.
 """
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -46,8 +45,7 @@ def test_directory(tmp_path: Path) -> Path:
 
     # Python code file
     code_py = tmp_path / "code.py"
-    code_py.write_text(
-        """def function1():
+    code_py.write_text("""def function1():
     '''This is function 1.'''
     pass
 
@@ -63,8 +61,7 @@ class MyClass:
     def method(self):
         '''This is a method.'''
         pass
-"""
-    )
+""")
 
     # Empty file
     empty_file = tmp_path / "empty.txt"
@@ -347,7 +344,7 @@ def test_large_code_document_chunking(
     for i in range(200):
         code_lines.append(f"def function_{i}():")
         code_lines.append(f"    '''Function {i} documentation.'''")
-        code_lines.append(f"    pass")
+        code_lines.append("    pass")
         code_lines.append("")
 
     large_code_file.write_text("\n".join(code_lines))
@@ -428,9 +425,9 @@ def test_optimize_for_embeddings_removes_excessive_blank_lines() -> None:
         else:
             current_blanks = 0
 
-    assert max_consecutive_blanks <= 2, (
-        f"Found {max_consecutive_blanks} consecutive blank lines"
-    )
+    assert (
+        max_consecutive_blanks <= 2
+    ), f"Found {max_consecutive_blanks} consecutive blank lines"
 
 
 def test_optimize_for_embeddings_preserves_special_characters() -> None:

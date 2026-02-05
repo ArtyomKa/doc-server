@@ -12,18 +12,16 @@ Tests cover:
 import tempfile
 import time
 from pathlib import Path
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from doc_server.config import Settings
-from doc_server.ingestion.document_processor import DocumentProcessor, DocumentChunk
+from doc_server.ingestion.document_processor import DocumentChunk, DocumentProcessor
 from doc_server.ingestion.file_filter import FileFilter
 from doc_server.logging_config import configure_structlog
 from doc_server.mcp_server import DocumentResult
 from doc_server.search.vector_store import ChromaVectorStore
-
 
 # Configure structlog for tests
 configure_structlog()

@@ -2,12 +2,12 @@
 """Development script to verify doc-server components work correctly."""
 
 import asyncio
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
 from doc_server.config import Settings
-from doc_server.ingestion.file_filter import FileFilter
 from doc_server.ingestion.document_processor import DocumentProcessor
+from doc_server.ingestion.file_filter import FileFilter
 from doc_server.search.embedding_service import EmbeddingService
 
 
@@ -19,7 +19,7 @@ async def verify_components():
     settings = Settings()
     print(f"   Storage path: {settings.storage_path}")
     print(f"   Embedding model: {settings.embedding_model}")
-    print(f"   ✓ Config OK\n")
+    print("   ✓ Config OK\n")
 
     # 2. Test file filter
     print("2. File Filter")
@@ -29,7 +29,7 @@ async def verify_components():
     print(f"   Found {len(result)} files to process")
     for f in result[:3]:
         print(f"   - {f.file_path}")
-    print(f"   ✓ Filter OK\n")
+    print("   ✓ Filter OK\n")
 
     # 3. Test document processor
     print("3. Document Processor")
@@ -41,7 +41,7 @@ async def verify_components():
         )
         chunks = processor.process_file(test_file, "/test-lib")
         print(f"   Created {len(chunks)} chunks from test file")
-        print(f"   ✓ Processor OK\n")
+        print("   ✓ Processor OK\n")
 
     # 4. Test embedding service
     print("4. Embedding Service")
@@ -49,7 +49,7 @@ async def verify_components():
         service = EmbeddingService(cache_dir=tmp, enable_cache=False)
         embeddings = service.get_embeddings(["test sentence"])
         print(f"   Embedding shape: {embeddings.shape}")
-        print(f"   ✓ Embeddings OK\n")
+        print("   ✓ Embeddings OK\n")
 
     print("=" * 50)
     print("All components working! MCP server is ready.")

@@ -211,11 +211,11 @@ def test_integration_with_embedding_service():
     """Verify integration with EmbeddingService"""
     print("Testing integration with EmbeddingService...")
 
-    from doc_server.search.vector_store import (
-        ChromaVectorStore,
-        ChromaEmbeddingFunction,
-    )
     from doc_server.search.embedding_service import get_embedding_service
+    from doc_server.search.vector_store import (
+        ChromaEmbeddingFunction,
+        ChromaVectorStore,
+    )
 
     with tempfile.TemporaryDirectory() as temp_dir:
         embedding_service = get_embedding_service()
@@ -243,8 +243,8 @@ def test_error_handling():
 
     from doc_server.search.vector_store import (
         ChromaVectorStore,
-        CollectionNotFoundError,
         CollectionCreationError,
+        CollectionNotFoundError,
         DocumentAdditionError,
         VectorStoreError,
     )

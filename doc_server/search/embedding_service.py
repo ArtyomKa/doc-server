@@ -12,7 +12,6 @@ import pickle
 import signal
 import time
 from pathlib import Path
-from typing import List, Optional, Union
 
 import numpy as np
 import torch
@@ -69,7 +68,7 @@ class EmbeddingService:
         self,
         model_name: str = "all-MiniLM-L6-v2",
         device: str = "auto",
-        cache_dir: Optional[Union[str, Path]] = None,
+        cache_dir: str | Path | None = None,
         enable_cache: bool = True,
         cache_size_limit: int = 10000,
         cache_ttl_seconds: int = 86400,
@@ -92,7 +91,7 @@ class EmbeddingService:
         self.cache_size_limit = cache_size_limit
         self.cache_ttl_seconds = cache_ttl_seconds
         self.warmup_timeout_seconds = warmup_timeout_seconds
-        self.warmup_time_seconds: Optional[float] = None
+        self.warmup_time_seconds: float | None = None
 
         # Initialize model with device auto-detection
         actual_device = self._determine_device(device)
@@ -280,7 +279,7 @@ class EmbeddingService:
             return 32  # GPU can handle larger batches
         return 16  # CPU needs smaller batches
 
-    def _validate_texts(self, texts: List[str]) -> List[str]:
+    def _validate_texts(self, texts: list[str]) -> list[str]:
         """
         Validate and sanitize input texts before encoding.
 
@@ -322,7 +321,7 @@ class EmbeddingService:
 
         return validated_texts
 
-    def _encode_with_timeout(self, texts: List[str], timeout: int = 30) -> np.ndarray:
+    def _encode_with_timeout(self, texts: list[str], timeout: int = 30) -> np.ndarray:
         """
         Encode texts with timeout handling using signals.
 
@@ -369,7 +368,7 @@ class EmbeddingService:
 
     def _encode_with_retry(
         self,
-        texts: List[str],
+        texts: list[str],
         batch_size: int,
         normalize: bool,
         max_retries: int = 3,
@@ -503,8 +502,8 @@ class EmbeddingService:
 
     def get_embeddings(
         self,
-        texts: List[str],
-        batch_size: Optional[int] = None,
+        texts: list[str],
+        batch_size: int | None = None,
         force_recompute: bool = False,
         normalize: bool = True,
         show_progress: bool = False,
@@ -691,7 +690,7 @@ class EmbeddingService:
         corpus_embeddings: np.ndarray,
         top_k: int = 10,
         score_function: str = "cosine",
-    ) -> List[List[dict]]:
+    ) -> list[list[dict]]:
         """
         Compute similarity between queries and corpus.
 
@@ -731,8 +730,8 @@ class EmbeddingService:
         return hits
 
     def batch_process(
-        self, text_batches: List[List[str]], batch_size: Optional[int] = None
-    ) -> List[np.ndarray]:
+        self, text_batches: list[list[str]], batch_size: int | None = None
+    ) -> list[np.ndarray]:
         """
         Process multiple text batches efficiently.
 
@@ -805,7 +804,7 @@ class EmbeddingService:
 
 
 # Global embedding service instance
-_embedding_service: Optional[EmbeddingService] = None
+_embedding_service: EmbeddingService | None = None
 
 
 def get_embedding_service() -> EmbeddingService:

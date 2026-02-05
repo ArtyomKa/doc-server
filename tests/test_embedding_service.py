@@ -6,8 +6,7 @@ Tests embedding generation performance, caching behavior, and batch processing.
 
 import tempfile
 import time
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -15,11 +14,11 @@ import torch
 
 from doc_server.search.embedding_service import (
     EmbeddingError,
-    EmbeddingTimeoutError,
     EmbeddingGPUError,
-    EmbeddingValidationError,
     EmbeddingRetryExhaustedError,
     EmbeddingService,
+    EmbeddingTimeoutError,
+    EmbeddingValidationError,
     get_embedding_service,
     reset_embedding_service,
 )
@@ -88,9 +87,9 @@ class TestEmbeddingServicePerformance:
         np.testing.assert_array_almost_equal(embeddings_small, embeddings_optimal)
 
         # Optimal batch size should be as fast or faster
-        assert optimal_batch_time <= small_batch_time * 1.2, (
-            f"Optimal batch size ({optimal_batch_time:.3f}s) should be competitive with small batch ({small_batch_time:.3f}s)"
-        )
+        assert (
+            optimal_batch_time <= small_batch_time * 1.2
+        ), f"Optimal batch size ({optimal_batch_time:.3f}s) should be competitive with small batch ({small_batch_time:.3f}s)"
 
         # Verify shape
         assert embeddings_optimal.shape == (50, 384)
@@ -113,9 +112,9 @@ class TestEmbeddingServicePerformance:
         np.testing.assert_array_almost_equal(embeddings_first, embeddings_cached)
 
         # Cached version should be significantly faster
-        assert cached_time < first_time * 0.5, (
-            f"Cached version ({cached_time:.3f}s) should be much faster than first ({first_time:.3f}s)"
-        )
+        assert (
+            cached_time < first_time * 0.5
+        ), f"Cached version ({cached_time:.3f}s) should be much faster than first ({first_time:.3f}s)"
 
         # Verify cache statistics
         stats = embedding_service.get_cache_stats()
@@ -136,14 +135,14 @@ class TestEmbeddingServicePerformance:
 
         # Verify shape and reasonable processing time
         assert embeddings.shape == (1000, 384)
-        assert processing_time < 120.0, (
-            f"Large batch processing took too long: {processing_time:.2f}s"
-        )
+        assert (
+            processing_time < 120.0
+        ), f"Large batch processing took too long: {processing_time:.2f}s"
 
         # Verify no NaN values
-        assert not np.any(np.isnan(embeddings)), (
-            "Embeddings should not contain NaN values"
-        )
+        assert not np.any(
+            np.isnan(embeddings)
+        ), "Embeddings should not contain NaN values"
 
     def test_gpu_cpu_performance_consistency(self, embedding_service, sample_texts):
         """Test that CPU and GPU produce consistent results."""
@@ -183,9 +182,9 @@ class TestEmbeddingServicePerformance:
         # Verify structure and performance
         assert len(results) == len(queries)
         assert len(results[0]) <= 10  # Should not exceed top_k
-        assert similarity_time < 5.0, (
-            f"Similarity computation took too long: {similarity_time:.3f}s"
-        )
+        assert (
+            similarity_time < 5.0
+        ), f"Similarity computation took too long: {similarity_time:.3f}s"
 
         # Verify results have required fields
         for query_results in results:
@@ -282,22 +281,22 @@ class TestEmbeddingServicePerformance:
         texts_per_second = len(texts) / total_time
 
         # Should process at least 5 texts per second on CPU
-        assert texts_per_second > 5.0, (
-            f"Performance regression: only {texts_per_second:.1f} texts/second (expected > 5.0)"
-        )
+        assert (
+            texts_per_second > 5.0
+        ), f"Performance regression: only {texts_per_second:.1f} texts/second (expected > 5.0)"
 
         # Embedding quality check - should have reasonable variance
         embedding_std = np.std(embeddings)
-        assert 0.01 < embedding_std < 1.0, (
-            f"Embedding variance seems unusual: std={embedding_std:.3f}"
-        )
+        assert (
+            0.01 < embedding_std < 1.0
+        ), f"Embedding variance seems unusual: std={embedding_std:.3f}"
 
         # Memory efficiency check
         memory_per_embedding = embeddings.nbytes / len(embeddings)
         expected_size = 384 * 4  # 384 dimensions * 4 bytes per float32
-        assert abs(memory_per_embedding - expected_size) < 10, (
-            f"Memory usage unexpected: {memory_per_embedding} bytes per embedding"
-        )
+        assert (
+            abs(memory_per_embedding - expected_size) < 10
+        ), f"Memory usage unexpected: {memory_per_embedding} bytes per embedding"
 
 
 class TestErrorHandling:
@@ -684,9 +683,9 @@ class TestTTLFunctionality:
         assert cleanup_time < 1.0, f"TTL cleanup took too long: {cleanup_time:.3f}s"
 
         # Generation should also be reasonable
-        assert generation_time < 60.0, (
-            f"Embedding generation took too long: {generation_time:.3f}s"
-        )
+        assert (
+            generation_time < 60.0
+        ), f"Embedding generation took too long: {generation_time:.3f}s"
 
 
 class TestWarmupPerformance:
@@ -769,9 +768,9 @@ class TestWarmupPerformance:
         first_inference_time = time.time() - start_time
 
         # Should complete within reasonable time
-        assert first_inference_time < 10.0, (
-            f"First inference took too long: {first_inference_time:.3f}s"
-        )
+        assert (
+            first_inference_time < 10.0
+        ), f"First inference took too long: {first_inference_time:.3f}s"
         assert embeddings.shape == (1, 384)
 
     def test_warmup_with_custom_timeout(self):
@@ -1130,7 +1129,7 @@ class TestUncoveredCriticalPaths:
         embedding_service.get_embeddings(texts)
 
         # Mock file operations to raise error during save
-        with patch("builtins.open", side_effect=IOError("Disk full")):
+        with patch("builtins.open", side_effect=OSError("Disk full")):
             # Should handle save errors gracefully
             embedding_service._save_cache()
 

@@ -9,12 +9,13 @@ This module provides comprehensive fixtures for:
 """
 
 import os
-import sys
 import shutil
+import sys
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Generator, List, Dict, Optional
-from unittest.mock import MagicMock, patch
+from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -34,7 +35,6 @@ def configure_structlog_for_tests() -> None:
     def mock_isatty():
         return False
 
-    import os
 
     original_log_format = os.environ.get("DOC_SERVER_LOG_FORMAT")
     os.environ["DOC_SERVER_LOG_FORMAT"] = "console"
@@ -96,8 +96,7 @@ def sample_repository(tmp_path: Path) -> Generator[Path, None, None]:
     (src_dir / "__init__.py").write_text(
         '"""Sample package for testing."""\n\n__version__ = "1.0.0"\n'
     )
-    (src_dir / "module_a.py").write_text(
-        '''"""Module A with sample functions."""
+    (src_dir / "module_a.py").write_text('''"""Module A with sample functions."""
 
 def hello_world() -> str:
     """Return a greeting message."""
@@ -124,8 +123,7 @@ class Calculator:
         """Multiply the calculator value."""
         self.value *= x
         return self.value
-'''
-    )
+''')
 
     (src_dir / "module_b.py").write_text(
         '''"""Module B with data processing functions."""
@@ -167,8 +165,7 @@ class DataProcessor:
     docs_dir = repo_dir / "docs"
     docs_dir.mkdir(exist_ok=True)
 
-    (docs_dir / "README.md").write_text(
-        """# Sample Repository
+    (docs_dir / "README.md").write_text("""# Sample Repository
 
 This is a sample repository for testing doc-server functionality.
 
@@ -191,11 +188,9 @@ result = calc.multiply(2)  # Returns 20
 ## API Reference
 
 See the `sample_package` module for detailed API documentation.
-"""
-    )
+""")
 
-    (docs_dir / "api.md").write_text(
-        """# API Reference
+    (docs_dir / "api.md").write_text("""# API Reference
 
 ## Calculator
 
@@ -211,11 +206,9 @@ See the `sample_package` module for detailed API documentation.
 
 - `get_fields(field_name: str) -> List[Any]` - Extract field values
 - `count_by_field(field_name: str) -> Dict[Any, int]` - Count field occurrences
-"""
-    )
+""")
 
-    (repo_dir / ".gitignore").write_text(
-        """__pycache__/
+    (repo_dir / ".gitignore").write_text("""__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -235,11 +228,9 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-"""
-    )
+""")
 
-    (repo_dir / "setup.py").write_text(
-        '''"""Setup configuration for sample package."""
+    (repo_dir / "setup.py").write_text('''"""Setup configuration for sample package."""
 
 from setuptools import setup, find_packages
 
@@ -249,8 +240,7 @@ setup(
     packages=find_packages(),
     python_requires=">=3.10",
 )
-'''
-    )
+''')
 
     yield repo_dir
 
@@ -269,8 +259,7 @@ def algorithms_repository(tmp_path: Path) -> Generator[Path, None, None]:
     sorting_dir = repo_dir / "sorting"
     sorting_dir.mkdir(exist_ok=True)
 
-    (sorting_dir / "__init__.py").write_text(
-        '''"""Sorting algorithms module."""
+    (sorting_dir / "__init__.py").write_text('''"""Sorting algorithms module."""
 
 from typing import List, Callable
 
@@ -354,14 +343,12 @@ def merge_sort(arr: List[int]) -> List[int]:
     result.extend(left[i:])
     result.extend(right[j:])
     return result
-'''
-    )
+''')
 
     searching_dir = repo_dir / "searching"
     searching_dir.mkdir(exist_ok=True)
 
-    (searching_dir / "__init__.py").write_text(
-        '''"""Searching algorithms module."""
+    (searching_dir / "__init__.py").write_text('''"""Searching algorithms module."""
 
 from typing import List, Optional
 
@@ -410,14 +397,12 @@ def binary_search(arr: List[int], target: int) -> Optional[int]:
             right = mid - 1
 
     return None
-'''
-    )
+''')
 
     data_structures_dir = repo_dir / "data_structures"
     data_structures_dir.mkdir(exist_ok=True)
 
-    (data_structures_dir / "__init__.py").write_text(
-        '''"""Data structures module."""
+    (data_structures_dir / "__init__.py").write_text('''"""Data structures module."""
 
 from typing import Any, Optional, List
 
@@ -500,11 +485,9 @@ class Queue:
 
     def is_empty(self) -> bool:
         return len(self._items) == 0
-'''
-    )
+''')
 
-    (repo_dir / "README.md").write_text(
-        """# Algorithms Repository
+    (repo_dir / "README.md").write_text("""# Algorithms Repository
 
 A collection of common algorithms and data structures for testing.
 
@@ -522,14 +505,13 @@ from sorting import bubble_sort
 result = bubble_sort([3, 1, 4, 1, 5, 9, 2, 6])
 # Returns: [1, 1, 2, 3, 4, 5, 6, 9]
 ```
-"""
-    )
+""")
 
     yield repo_dir
 
 
 @pytest.fixture
-def test_documents() -> List[Dict[str, Any]]:
+def test_documents() -> list[dict[str, Any]]:
     """
     Provide test documents for search testing.
 
@@ -611,7 +593,7 @@ def performance_monitor():
 
     class PerformanceMonitor:
         def __init__(self):
-            self.start_times: Dict[str, float] = {}
+            self.start_times: dict[str, float] = {}
 
         def start(self, name: str) -> None:
             self.start_times[name] = time.perf_counter()
@@ -647,7 +629,6 @@ def test_config():
 @pytest.fixture
 def isolated_environment(monkeypatch):
     """Create an isolated test environment with patched paths."""
-    import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:
         test_home = Path(tmpdir) / "test_home"

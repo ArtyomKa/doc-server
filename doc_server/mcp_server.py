@@ -202,10 +202,12 @@ def search_docs(query: str, library_id: str, limit: int = 10) -> list[dict[str, 
                 results_count=len(output),
                 search_time_ms=round(search_time * 1000, 2),
                 total_time_ms=round(total_time * 1000, 2),
-                avg_relevance_score=sum(r.relevance_score for r in document_results)
-                / len(document_results)
-                if document_results
-                else 0,
+                avg_relevance_score=(
+                    sum(r.relevance_score for r in document_results)
+                    / len(document_results)
+                    if document_results
+                    else 0
+                ),
             )
             return output
 

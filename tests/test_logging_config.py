@@ -2,19 +2,16 @@
 Tests for logging configuration module.
 """
 
-import logging
-from unittest.mock import patch
 
-import pytest
 from structlog import get_logger
 
 from doc_server.logging_config import (
+    LogContext,
+    bind_context,
+    clear_context,
     configure_structlog,
     get_logger,
-    bind_context,
     unbind_context,
-    clear_context,
-    LogContext,
 )
 
 

@@ -15,14 +15,14 @@ import json
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
 
 from doc_server.config import Settings
-from doc_server.search.embedding_service import EmbeddingService, EmbeddingError
+from doc_server.search.embedding_service import EmbeddingError, EmbeddingService
 from doc_server.search.vector_store import (
     ChromaEmbeddingFunction,
     ChromaVectorStore,
@@ -110,7 +110,7 @@ def mock_collection() -> Mock:
 
 
 @pytest.fixture
-def sample_documents() -> List[str]:
+def sample_documents() -> list[str]:
     """Sample documents for testing."""
     return [
         "This is a test document about machine learning.",
@@ -121,7 +121,7 @@ def sample_documents() -> List[str]:
 
 
 @pytest.fixture
-def sample_metadata() -> List[Dict[str, Any]]:
+def sample_metadata() -> list[dict[str, Any]]:
     """Sample metadata for testing."""
     return [
         {"source": "doc1.txt", "chapter": "introduction", "page": 1},
@@ -531,8 +531,8 @@ class TestDocumentOperations:
         mock_client_class,
         vector_store: ChromaVectorStore,
         mock_collection: Mock,
-        sample_documents: List[str],
-        sample_metadata: List[Dict[str, Any]],
+        sample_documents: list[str],
+        sample_metadata: list[dict[str, Any]],
     ):
         """Test successful document addition."""
         mock_client = Mock()
@@ -559,7 +559,7 @@ class TestDocumentOperations:
         mock_client_class,
         vector_store: ChromaVectorStore,
         mock_collection: Mock,
-        sample_documents: List[str],
+        sample_documents: list[str],
     ):
         """Test document addition with custom IDs."""
         mock_client = Mock()
@@ -596,7 +596,7 @@ class TestDocumentOperations:
         self,
         mock_client_class,
         vector_store: ChromaVectorStore,
-        sample_documents: List[str],
+        sample_documents: list[str],
     ):
         """Test document addition with mismatched ID count."""
         mock_client = Mock()
@@ -616,7 +616,7 @@ class TestDocumentOperations:
         self,
         mock_client_class,
         vector_store: ChromaVectorStore,
-        sample_documents: List[str],
+        sample_documents: list[str],
     ):
         """Test document addition with mismatched metadata count."""
         mock_client = Mock()
@@ -894,7 +894,7 @@ class TestBackupOperations:
         assert result.parent.name == "backups"
 
         # Verify backup content
-        with open(result, "r") as f:
+        with open(result) as f:
             backup_data = json.load(f)
 
         assert backup_data["library_id"] == "test-library"

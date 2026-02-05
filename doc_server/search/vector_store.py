@@ -13,17 +13,14 @@ from pathlib import Path
 from typing import Any
 
 import chromadb
+from chromadb import Collection, EmbeddingFunction
 from chromadb.api.types import (
     Documents,
     Embeddings,
-    QueryResult,
-    GetResult,
     Include,
     Metadata,
-    WhereDocument,
 )
 from chromadb.errors import ChromaError, NotFoundError
-from chromadb import EmbeddingFunction, Collection
 
 from ..config import settings
 from .embedding_service import EmbeddingService, get_embedding_service
@@ -625,6 +622,7 @@ class ChromaVectorStore:
                                 metadatas=batch_metas,
                                 embeddings=embeddings.tolist(),
                             )
+
                     else:
 
                         def _add_batch():

@@ -203,9 +203,9 @@ class TestCheckExtension:
         for filename in allowed_files:
             test_file = tmp_path / filename
             test_file.write_text("content")
-            assert file_filter._check_extension(test_file) is True, (
-                f"Failed for {filename}"
-            )
+            assert (
+                file_filter._check_extension(test_file) is True
+            ), f"Failed for {filename}"
 
     def test_disallowed_extension(
         self, file_filter: FileFilter, tmp_path: Path

@@ -96,9 +96,7 @@ class TestDocumentProcessorUncoveredPaths:
         """Test encoding detection with mixed encoding content."""
         mixed_file = tmp_path / "mixed.txt"
         # Create content with mixed byte sequences
-        mixed_content = b"English text\n" + "Café résumé\n".encode(
-            "latin-1"
-        )
+        mixed_content = b"English text\n" + "Café résumé\n".encode("latin-1")
         mixed_file.write_bytes(mixed_content)
 
         # Should detect and decode appropriately

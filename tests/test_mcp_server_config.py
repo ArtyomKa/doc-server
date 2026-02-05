@@ -2,7 +2,7 @@
 Tests for MCP server configuration and health check functions.
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 

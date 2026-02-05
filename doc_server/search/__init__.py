@@ -15,6 +15,16 @@ from .embedding_service import (
     get_embedding_service,
     reset_embedding_service,
 )
+from .hybrid_search import (
+    BM25Scorer,
+    HybridSearch,
+    HybridSearchError,
+    HybridSearchQueryError,
+    HybridSearchValidationError,
+    SearchResult,
+    get_hybrid_search,
+    reset_hybrid_search,
+)
 from .vector_store import (
     ChromaEmbeddingFunction,
     ChromaVectorStore,
@@ -28,16 +38,6 @@ from .vector_store import (
     VectorStoreError,
     get_vector_store,
     reset_vector_store,
-)
-from .hybrid_search import (
-    BM25Scorer,
-    HybridSearch,
-    HybridSearchError,
-    HybridSearchQueryError,
-    HybridSearchValidationError,
-    SearchResult,
-    get_hybrid_search,
-    reset_hybrid_search,
 )
 
 __all__ = [
