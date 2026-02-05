@@ -121,7 +121,7 @@ class BM25Scorer:
 
         self.corpus_size = len(documents)
         self.doc_lengths = [len(doc.split()) for doc in documents]
-        self.avg_doc_length: float = sum(self.doc_lengths) / self.corpus_size
+        self.avg_doc_length = sum(self.doc_lengths) / self.corpus_size
 
         # Calculate document frequencies
         self.doc_freqs = {}

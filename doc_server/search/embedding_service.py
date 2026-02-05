@@ -178,14 +178,14 @@ class EmbeddingService:
             except (ValueError, OSError):
                 pass  # Ignore signal handler restoration errors
 
-        warmup_time = time.time() - start_time
-        self.warmup_time_seconds = float(warmup_time)
+        actual_warmup_time = time.time() - start_time
+        self.warmup_time_seconds = actual_warmup_time
 
         # Log timing with appropriate level
-        if warmup_time > 5.0:
-            logger.warning(f"Model warmup took {warmup_time:.2f}s (>5s target)")
+        if actual_warmup_time > 5.0:
+            logger.warning(f"Model warmup took {actual_warmup_time:.2f}s (>5s target)")
         else:
-            logger.info(f"Model warmup completed in {warmup_time:.2f}s")
+            logger.info(f"Model warmup completed in {actual_warmup_time:.2f}s")
 
     def _get_text_hash(self, text: str) -> str:
         """Generate consistent hash for text caching."""

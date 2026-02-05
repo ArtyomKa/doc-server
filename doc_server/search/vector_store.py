@@ -637,9 +637,9 @@ class ChromaVectorStore:
                     else:
                         # Bind loop variables in closure using default arguments
                         def _add_batch_no_embs(
-                            docs=batch_docs,
-                            ids=batch_ids,
-                            metas=batch_metas,
+                            docs: Any = batch_docs,
+                            ids: Any = batch_ids,
+                            metas: Any = batch_metas,
                         ) -> None:
                             collection.add(
                                 documents=docs,
