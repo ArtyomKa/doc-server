@@ -158,6 +158,20 @@ test-fast: ## Run quick tests only (exclude slow/performance/integration markers
 		exit 1; \
 	fi
 
+build: ## Build wheel and source distribution
+	@echo "$(CYAN)Building distributions...$(RESET)"
+	@echo "$(YELLOW)Installing hatch...$(RESET)"
+	@uv pip install hatch -q
+	@echo "$(YELLOW)Building wheel and sdist...$(RESET)"
+	@if uv run hatch build; then \
+		echo "$(GREEN)✓ Build complete$(RESET)"; \
+		echo "$(WHITE)Artifacts:$(RESET)"; \
+		ls -lh dist/*.whl dist/*.tar.gz 2>/dev/null || echo "  No artifacts found"; \
+	else \
+		echo "$(RED)✗ Build failed$(RESET)"; \
+		exit 1; \
+	fi
+
 serve: ## Run MCP server
 	@echo "$(CYAN)Starting MCP server...$(RESET)"
 	@if uv run python -m doc_server.mcp_server; then \
