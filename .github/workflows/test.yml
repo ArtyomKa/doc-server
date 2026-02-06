@@ -44,7 +44,7 @@ jobs:
         run: uv run ruff check doc_server/ tests/
 
       - name: Run MyPy
-        run: uv run mypy doc_server/ --ignore-missing-imports
+        run: uv run mypy doc_server/
 
   test:
     name: Test (Python ${{ matrix.python-version }})
