@@ -15,6 +15,7 @@ Doc Server is a comprehensive solution for ingesting, processing, and searching 
 
 ## Features
 
+- **CLI Interface**: Comprehensive command-line tool for all operations
 - **Multi-source Ingestion**: Clone Git repositories or extract ZIP archives
 - **Intelligent File Processing**: Support for Markdown, code files, PDFs, and Word documents
 - **Hybrid Search**: Combines keyword search with semantic understanding
@@ -48,6 +49,31 @@ mypy doc_server
 ```
 
 ## Usage
+
+### CLI Commands
+
+```bash
+# Ingest documentation from a Git repository
+doc-server ingest -s https://github.com/pandas-dev/pandas -l /pandas
+
+# Search documentation
+doc-server search -q "pandas read_csv" -l /pandas
+doc-server search -q "fastapi routing" -l /fastapi -n 5 -f json
+
+# List all ingested libraries
+doc-server list
+doc-server list -f simple
+
+# Remove a library
+doc-server remove -l /pandas --force
+
+# Start the MCP server
+doc-server serve
+doc-server serve -t sse -h 0.0.0.0 -p 8080
+
+# Check server health
+doc-server health
+```
 
 ### MCP Server
 
