@@ -51,10 +51,6 @@ def configure_structlog() -> None:
         structlog.contextvars.merge_contextvars,
         # Add log level
         structlog.stdlib.add_log_level,
-        # Add logger name
-        structlog.stdlib.add_logger_name,
-        # Filter by log level
-        structlog.stdlib.filter_by_level,
         # Format positional arguments
         structlog.stdlib.PositionalArgumentsFormatter(),
         # Add timestamp in ISO 8601 format
@@ -86,6 +82,10 @@ def configure_structlog() -> None:
     else:
         # Production: Structured JSON output
         processors = shared_processors + [
+            # Add logger name (only for stdlib loggers)
+            structlog.stdlib.add_logger_name,
+            # Filter by log level (only for stdlib loggers)
+            structlog.stdlib.filter_by_level,
             # Convert bytes to unicode
             structlog.processors.UnicodeDecoder(),
             # Render as JSON

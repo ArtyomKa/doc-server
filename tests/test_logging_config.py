@@ -2,6 +2,11 @@
 Tests for logging configuration module.
 """
 
+import sys
+from unittest.mock import patch
+
+import structlog
+
 from doc_server.logging_config import (
     LogContext,
     bind_context,
@@ -59,3 +64,42 @@ class TestLoggingConfig:
             with LogContext(key2="value2"):
                 logger = get_logger("test")
                 logger.info("Nested context test")
+
+
+class TestDevelopmentModeLogging:
+    """Test logging in development mode with console output."""
+
+    def test_development_mode_logging_with_printlogger(self):
+        """
+        Test that logging works in development mode with PrintLogger.
+
+        This reproduces the bug where 'PrintLogger' object has no attribute 'name'
+        because add_logger_name processor was applied to PrintLogger which doesn't
+        have a .name attribute.
+        """
+        # Clear any existing configuration
+        structlog.reset_defaults()
+
+        # Mock settings to use console format and simulate TTY
+        with patch("doc_server.logging_config.settings") as mock_settings:
+            mock_settings.log_format = "console"
+            mock_settings.log_level = "INFO"
+
+            # Mock sys.stderr.isatty() to return True (development mode)
+            with patch.object(sys.stderr, "isatty", return_value=True):
+                # Configure structlog in development mode
+                configure_structlog()
+
+                # Get a logger and try to log - this should NOT raise
+                logger = get_logger("test_dev_mode")
+
+                # This is the actual test - logging should work without error
+                try:
+                    logger.info("Test message in development mode")
+                except AttributeError as e:
+                    if "'PrintLogger' object has no attribute 'name'" in str(e):
+                        raise AssertionError(
+                            "PrintLogger.name bug reproduced: "
+                            "add_logger_name processor incompatible with PrintLogger"
+                        ) from e
+                    raise

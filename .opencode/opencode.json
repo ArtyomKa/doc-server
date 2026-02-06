@@ -3,10 +3,10 @@
     "mcp": {
     "doc-server": {
         "type": "local",
-      "command": ["uv", "run", "doc-server"],
+      "command": ["uv", "run", "doc-server", "serve"],
       "environment": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
-        "DOC_SERVER_STORAGE_PATH": "${DOC_SERVER_STORAGE_PATH:-~/.doc-server}"
+        "DOC_SERVER_STORAGE_PATH": "/home/artyom/.doc-server"
       }
     }
   }
