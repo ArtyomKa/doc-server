@@ -1,0 +1,156 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0)'
+        required: true
+        type: string
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.5.0'
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]"
+
+      - name: Run linting
+        run: |
+          black --check doc_server tests
+          isort --check-only doc_server tests
+          ruff check doc_server tests
+
+      - name: Run type checking
+        run: mypy doc_server
+
+      - name: Run tests
+        run: pytest --cov=doc_server --cov-report=xml --cov-fail-under=85
+
+  build:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.5.0'
+
+      - name: Install build dependencies
+        run: uv pip install hatch
+
+      - name: Build distributions
+        run: hatch build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+          retention-days: 5
+
+  test-install:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install from wheel
+        run: |
+          python -m pip install dist/*.whl
+
+      - name: Verify version
+        run: |
+          doc-server --version
+
+      - name: Test CLI commands
+        run: |
+          doc-server --help
+          doc-server health || true  # May fail without proper setup, but should not crash
+
+  release:
+    needs: [verify, build, test-install]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+      - name: Determine version and prerelease status
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check if prerelease (contains alpha, beta, or rc)
+          if [[ "$VERSION" =~ -(alpha|beta|rc) ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: .github/changelog-config.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release v${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
