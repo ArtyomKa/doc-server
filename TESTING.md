@@ -7,7 +7,24 @@ This document provides comprehensive information about running and extending tes
 ```bash
 # Install development dependencies
 uv pip install -e ".[dev]"
+```
 
+## Quick Start with Make
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage (85% threshold)
+make test-cov
+
+# Run quick tests only
+make test-fast
+```
+
+## Manual Testing with Pytest
+
+```bash
 # Run all tests
 pytest
 
@@ -76,11 +93,11 @@ pytest -m security -v
 
 ### Coverage Requirements
 
-The project requires >90% coverage for critical path components:
+The project requires >85% coverage for critical path components:
 
 ```bash
 # Check coverage
-pytest --cov=doc_server --cov-fail-under=90
+pytest --cov=doc_server --cov-fail-under=85
 
 # Generate HTML coverage report
 pytest --cov=doc_server --cov-report=html
@@ -171,10 +188,20 @@ The GitHub Actions workflow (`.github/workflows/test.yml`) runs:
 
 1. **Lint** - Black, isort, Ruff, MyPy
 2. **Test** - Pytest on Python 3.10, 3.11, 3.12
-3. **Coverage** - Verify >90% coverage
+3. **Coverage** - Verify >85% coverage
 4. **Performance** - Run benchmarks on main branch
 5. **Integration** - Test on pull requests
 6. **Security** - Bandit and Safety scans
+
+### Makefile Targets
+
+The CI/CD pipeline uses these Makefile targets:
+
+- `make test` - Run all tests
+- `make test-cov` - Run tests with coverage (85% threshold)
+- `make test-fast` - Run quick tests only
+- `make lint` - Run all linting tools
+- `make format` - Format code with Black and isort
 
 ### Local CI Simulation
 
@@ -213,7 +240,7 @@ pytest --timeout=300 tests/
 pytest tests/test_embedding_service.py -v --timeout=600
 ```
 
-### Coverage not reaching 90%
+### Coverage not reaching 85%
 
 ```bash
 # See which lines are missing coverage

@@ -85,3 +85,13 @@ tests/
 - **MyPy**: Strict type checking, no untyped definitions
 - **Ruff**: E, W, F, I, B, C4, UP rules (ignores E501, B008)
 - **pytest**: Auto asyncio mode, verbose output, short tracebacks
+
+---
+
+## Security Scanning (Future)
+
+**Note**: Security scanning tools (Bandit, Safety) are planned for future implementation. The CI/CD pipeline and Makefile will be updated to include:
+- Bandit for static security analysis
+- Safety for dependency vulnerability scanning
+
+These tools are currently commented out in `.github/workflows/test.yml` and will be enabled once the security scanning infrastructure is fully configured.
