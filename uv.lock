@@ -356,6 +356,15 @@ wheels = [
 ]
 
 [[package]]
+name = "chardet"
+version = "5.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/0d/f7b6ab21ec75897ed80c17d79b15951a719226b9fababf1e40ea74d69079/chardet-5.2.0.tar.gz", hash = "sha256:1b3b6ff479a8c414bc3fa2c0852995695c4a026dcd6d0633b2dd092ca39c1cf7", size = 2069618, upload-time = "2023-08-01T19:23:02.662Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/38/6f/f5fbc992a329ee4e0f288c1fe0e2ad9485ed064cac731ed2fe47dcc38cbf/chardet-5.2.0-py3-none-any.whl", hash = "sha256:e1cf59446890a00105fe7b7912492ea04b6e6f06d4b742b2c788469e34c82970", size = 199385, upload-time = "2023-08-01T19:23:00.661Z" },
+]
+
+[[package]]
 name = "charset-normalizer"
 version = "3.4.4"
 source = { registry = "https://pypi.org/simple" }
@@ -743,6 +752,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
+    { name = "chardet" },
     { name = "chromadb" },
     { name = "faiss-cpu" },
     { name = "fastapi" },
@@ -770,6 +780,7 @@ dependencies = [
     { name = "structlog" },
     { name = "torch", version = "2.10.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
     { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
+    { name = "types-chardet" },
     { name = "uvicorn" },
 ]
 
@@ -801,6 +812,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.12.0" },
     { name = "black", marker = "extra == 'dev'", specifier = "==24.10.0" },
+    { name = "chardet", specifier = ">=5.2.0" },
     { name = "chromadb", specifier = ">=0.4.0" },
     { name = "faiss-cpu", specifier = ">=1.7.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
@@ -830,6 +842,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0.0" },
     { name = "structlog", specifier = ">=23.2.0" },
     { name = "torch", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "types-chardet", specifier = ">=5.0.4.6" },
     { name = "types-pyyaml", marker = "extra == 'dev'" },
     { name = "uvicorn", specifier = ">=0.24.0" },
 ]
@@ -4712,6 +4725,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/17/d4/064570dec6358aa9049d4708e4a10407d74c99258f8b2136bb8702303f1a/typer_slim-0.21.1.tar.gz", hash = "sha256:73495dd08c2d0940d611c5a8c04e91c2a0a98600cbd4ee19192255a233b6dbfd", size = 110478, upload-time = "2026-01-06T11:21:11.176Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/0a/4aca634faf693e33004796b6cee0ae2e1dba375a800c16ab8d3eff4bb800/typer_slim-0.21.1-py3-none-any.whl", hash = "sha256:6e6c31047f171ac93cc5a973c9e617dbc5ab2bddc4d0a3135dc161b4e2020e0d", size = 47444, upload-time = "2026-01-06T11:21:12.441Z" },
+]
+
+[[package]]
+name = "types-chardet"
+version = "5.0.4.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/47/932d35ac07203e936e69102dc9570e83606d386bacb60696f0c403224e86/types-chardet-5.0.4.6.tar.gz", hash = "sha256:caf4c74cd13ccfd8b3313c314aba943b159de562a2573ed03137402b2bb37818", size = 4592, upload-time = "2023-05-10T15:22:21.325Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/35/2a06c5c892eb1a0a4f4f74a6aff1ade05da82444af0190cf731761f2c46c/types_chardet-5.0.4.6-py3-none-any.whl", hash = "sha256:ea832d87e798abf1e4dfc73767807c2b7fee35d0003ae90348aea4ae00fb004d", size = 5853, upload-time = "2023-05-10T15:22:19.797Z" },
 ]
 
 [[package]]
