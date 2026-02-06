@@ -64,13 +64,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          # create-virtual-env: true
+
       - name: Create virtual environment
         run: uv venv
 
       - name: Install dependencies
-        run: |
-          uv pip install -e ".[dev]"
+        run: uv pip install -e ".[dev]"
 
       - name: Run pytest
         run: |
@@ -82,12 +81,25 @@ jobs:
             --cov-report=term-missing \
             --cov-fail-under=85
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
+      - name: Generate coverage badge
+        if: matrix.python-version == '3.11'
+        run: |
+          uv run coverage-badge -o coverage-badge.svg
+          echo "COVERAGE=$(grep -oP '(?<=<text>)[0-9]+(?=%</text>)' coverage-badge.svg)" >> $GITHUB_ENV
+
+      - name: Upload coverage badge
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
         with:
-          file: ./coverage.xml
-          flags: unittests
-          fail_ci_if_error: false
+          name: coverage-badge
+          path: coverage-badge.svg
+
+      - name: Download coverage badge
+        if: matrix.python-version == '3.11'
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-badge
+          path: badges/
 
   # performance:
   #   name: Performance Tests

@@ -1,7 +1,7 @@
 # Doc Server
 
 [![CI](https://github.com/ArtyomKa/doc-server/actions/workflows/test.yml/badge.svg)](https://github.com/ArtyomKa/doc-server/actions/workflows/test.yml)
-[![Coverage](https://codecov.io/gh/ArtyomKa/doc-server/branch/master/graph/badge.svg)](https://codecov.io/gh/ArtyomKa/doc-server)
+[![Coverage](https://img.shields.io/badge/coverage-89%25-green)](https://github.com/ArtyomKa/doc-server/actions/workflows/test.yml)
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Types: MyPy](https://img.shields.io/badge/types-MyPy-blue.svg)](https://mypy.readthedocs.io)
 [![Linting: Ruff](https://img.shields.io/badge/linting-Ruff-blue.svg)](https://docs.astral.sh/ruff)
