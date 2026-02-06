@@ -64,7 +64,7 @@ dev = [
 ]
 
 [project.scripts]
-doc-server = "doc_server.mcp_server:main"
+doc-server = "doc_server.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/docserver/doc-server"
