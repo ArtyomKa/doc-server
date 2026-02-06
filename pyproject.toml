@@ -79,6 +79,15 @@ path = "doc_server/__init__.py"
 include = [
     "/doc_server",
     "/tests",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/RELEASING.md",
+    "/AGENTS.md",
+    "/CODING_STANDARDS.md",
+    "/TESTING.md",
+    "/WORKFLOW.md",
+    "/LICENSE",
+    "/MANIFEST.in",
 ]
 
 [tool.hatch.build.targets.wheel]

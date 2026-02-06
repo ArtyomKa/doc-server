@@ -1,0 +1,41 @@
+{
+  "categories": [
+    {
+      "title": "## 🚀 Features",
+      "labels": ["feature", "feat", "enhancement"]
+    },
+    {
+      "title": "## 🐛 Bug Fixes",
+      "labels": ["bug", "fix", "bugfix"]
+    },
+    {
+      "title": "## 📚 Documentation",
+      "labels": ["docs", "documentation"]
+    },
+    {
+      "title": "## 🔧 Maintenance",
+      "labels": ["chore", "maintenance", "refactor"]
+    },
+    {
+      "title": "## 🧪 Testing",
+      "labels": ["test", "testing"]
+    },
+    {
+      "title": "## 📦 Dependencies",
+      "labels": ["deps", "dependencies"]
+    }
+  ],
+  "ignore_labels": [
+    "ignore",
+    "skip-changelog"
+  ],
+  "template": "${{CHANGELOG}}",
+  "pr_template": "- ${{TITLE}} (#${{NUMBER}})",
+  "empty_template": "No changes in this release",
+  "transformers": [
+    {
+      "pattern": "[a-z]+!:",
+      "target": "## 💥 Breaking Changes\n- ${{TITLE}} (#${{NUMBER}})"
+    }
+  ]
+}
