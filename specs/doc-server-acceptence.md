@@ -773,3 +773,160 @@ repos:
 - **Startup**: <5 seconds server startup time
 
 This comprehensive acceptance criteria and test specification ensures doc-server meets production quality standards while maintaining clear validation requirements for each development phase.
+
+---
+
+## Phase 9: Release & Deployment
+
+### Acceptance Criteria
+
+#### 9.1 Release Infrastructure
+
+**AC-9.1.1**: Version can be bumped manually following documented process in `RELEASING.md`
+
+**AC-9.1.2**: `__init__.py` and `pyproject.toml` versions are synchronized automatically
+
+**AC-9.1.3**: Pre-release versions follow semantic versioning format:
+- Alpha: `0.1.0-alpha.1`
+- Beta: `0.1.0-beta.1`
+- Release Candidate: `0.1.0-rc.1`
+
+**AC-9.1.4**: Hatchling builds wheel and source distribution without errors
+
+**AC-9.1.5**: Distribution includes all necessary files:
+- Package code in `doc_server/`
+- Entry points configured correctly
+- Dependencies specified in `pyproject.toml`
+
+**AC-9.1.6**: Installation from built artifacts works correctly
+
+**AC-9.1.7**: `doc-server --version` reports correct version after installation
+
+#### 9.2 GitHub Actions Workflows
+
+**AC-9.2.1**: Release triggers automatically on `v*` tag push (e.g., `v0.1.0`, `v0.2.0-alpha.1`)
+
+**AC-9.2.2**: Manual workflow dispatch works as backup with version input parameter
+
+**AC-9.2.3**: All CI checks must pass before release:
+- Linting (Black, isort, Ruff)
+- Type checking (MyPy)
+- Tests with coverage ≥85%
+
+**AC-9.2.4**: Changelog generated automatically from conventional commits
+
+**AC-9.2.5**: Pre-release versions marked correctly in GitHub:
+- Alpha/Beta/RC tags detected and marked as pre-release
+- Stable releases marked as latest
+
+**AC-9.2.6**: Release artifacts attached:
+- Wheel distribution (`.whl`)
+- Source distribution (`.tar.gz`)
+
+**AC-9.2.7**: Release notes include categorized changes (Features, Fixes, Documentation, etc.)
+
+#### 9.3 Release Process Documentation
+
+**AC-9.3.1**: `RELEASING.md` provides complete step-by-step instructions for:
+- Version bumping procedure
+- Tag creation and pushing
+- Pre-release testing checklist
+- Post-release verification steps
+
+**AC-9.3.2**: Tag naming conventions documented:
+- `v{major}.{minor}.{patch}` for stable releases
+- `v{major}.{minor}.{patch}-{prerelease}` for pre-releases
+
+**AC-9.3.3**: Rollback procedures documented for failed releases
+
+**AC-9.3.4**: Version progression examples documented:
+- `0.1.0-alpha.1` → `0.1.0-alpha.2` → `0.1.0-beta.1` → `0.1.0-rc.1` → `0.1.0`
+
+#### 9.4 Post-Release Verification
+
+**AC-9.4.1**: Installation from GitHub Release asset works:
+```bash
+pip install doc-server-0.1.0-py3-none-any.whl
+```
+
+**AC-9.4.2**: Version command reports correct version:
+```bash
+$ doc-server --version
+doc-server 0.1.0
+```
+
+**AC-9.4.3**: All CLI commands functional after installation from release:
+- `doc-server ingest`
+- `doc-server search`
+- `doc-server list`
+- `doc-server remove`
+- `doc-server serve`
+- `doc-server health`
+
+**AC-9.4.4**: Automated smoke tests pass in release workflow:
+- Import verification
+- Basic functionality test
+- Entry point verification
+
+**AC-9.4.5**: Installation from PyPI (if applicable) works correctly
+
+### Test Specifications
+
+#### Release Workflow Tests
+```python
+# tests/test_release.py
+def test_tag_triggers_release():
+    """Test that v* tag push triggers release workflow"""
+    
+def test_manual_dispatch_release():
+    """Test manual workflow dispatch with version input"""
+    
+def test_prerelease_marking():
+    """Test that alpha/beta/rc tags are marked as pre-release"""
+    
+def test_stable_release_marking():
+    """Test that stable releases are not marked as pre-release"""
+    
+def test_artifact_attached():
+    """Test that wheel and sdist are attached to release"""
+```
+
+#### Installation Tests
+```python
+# tests/test_installation.py
+def test_wheel_installation():
+    """Test installation from wheel artifact"""
+    
+def test_sdist_installation():
+    """Test installation from source distribution"""
+    
+def test_version_reporting():
+    """Test --version reports correct version"""
+    
+def test_cli_commands_available():
+    """Test all CLI commands are available after installation"""
+```
+
+#### Changelog Tests
+```python
+# tests/test_changelog.py
+def test_changelog_generation():
+    """Test changelog is generated from commits"""
+    
+def test_changelog_categories():
+    """Test changes are categorized correctly"""
+```
+
+### Performance Requirements
+
+- **Release Build Time**: <60 seconds
+- **Changelog Generation**: <10 seconds
+- **Artifact Upload**: Depends on file size (wheel ~50MB)
+- **Smoke Tests**: <30 seconds
+
+### Security Requirements
+
+- **Workflow Permissions**: Minimal required permissions
+- **Artifact Signing**: Optional for future phases
+- **Dependency Scanning**: Uses existing CI security jobs
+- **Tag Protection**: Recommended to protect v* tags

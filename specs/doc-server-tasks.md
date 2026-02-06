@@ -295,3 +295,104 @@
 - CLI interface is secondary to MCP functionality
 - Performance optimization should be deferred until after MVP
 - Documentation should be written alongside implementation, not after
+
+---
+
+## Phase 9: Release & Deployment (Priority: High)
+
+### 9.1 Release Infrastructure
+- [ ] Document manual version bumping process in `RELEASING.md`
+- [ ] Ensure version synchronization between `__init__.py` and `pyproject.toml`
+- [ ] Support pre-release versions: `0.1.0-alpha.1`, `0.1.0-beta.1`, `0.1.0-rc.1`
+- [ ] Verify hatchling build configuration in `pyproject.toml`
+- [ ] Create `MANIFEST.in` for source distribution exclusions
+- [ ] Test wheel and sdist generation works correctly
+- [ ] Test installation from built artifacts
+
+### 9.2 GitHub Actions Workflows
+- [ ] Create release workflow `.github/workflows/release.yml`
+- [ ] **Triggers**: Tag push matching `v*` (e.g., `v0.1.0`, `v0.2.0-alpha.1`)
+- [ ] **Manual**: Workflow dispatch with version input as backup
+- [ ] **Prerequisites**: All CI checks must pass before release
+- [ ] **Artifacts**: Build wheel and source distribution
+- [ ] **Changelog**: Generate from conventional commits
+- [ ] **Pre-release**: Detect and mark alpha/beta/rc tags correctly
+- [ ] **Assets**: Attach wheel and sdist to GitHub release
+
+### 9.3 Release Process Documentation
+
+#### `RELEASING.md`
+- [ ] Step-by-step manual release instructions
+- [ ] Version bumping checklist
+- [ ] Pre-release testing procedures
+- [ ] Tag naming conventions (`v0.1.0-alpha.1`)
+- [ ] Post-release verification steps
+- [ ] Rollback procedures
+
+#### Versioning Strategy
+- [ ] Semantic versioning rules for this project
+- [ ] Pre-release naming conventions
+- [ ] When to bump major/minor/patch
+- [ ] Example version progression: `0.1.0-alpha.1` → `0.1.0-beta.1` → `0.1.0`
+
+### 9.4 Post-Release Verification
+
+#### Installation Testing
+- [ ] Test installation from GitHub Release asset
+- [ ] Verify `doc-server --version` reports correct version
+- [ ] Test basic functionality after pip install
+- [ ] Verify CLI commands work correctly
+
+#### Release Validation
+- [ ] Automated smoke tests in release workflow
+- [ ] Verify all entry points function correctly
+- [ ] Check that all files are included in distribution
+
+### 9.5 Migration Path to Automated Versioning
+- [ ] Document future migration to `bump2version`
+- [ ] Document future migration to `semantic-release`
+- [ ] Keep versioning manual for Phase 9.1
+
+---
+
+## Progress Tracking
+
+### Current Status
+- **Phase 1**: 17/17 tasks complete ✅
+- **Phase 2**: 16/16 tasks complete ✅
+- **Phase 3**: 15/15 tasks complete ✅
+- **Phase 4**: 9/9 tasks complete ✅
+- **Phase 8**: 11/11 tasks complete ✅
+- **Phase 6**: 17/17 tasks complete ✅
+- **Phase 6.1.1**: 9/9 tasks complete ✅
+- **Phase 7.1**: 5/5 tasks complete ✅
+- **Phase 7**: 5/10 tasks complete (7.1 ✅ complete, 7.2 pending)
+- **Phase 9**: 0/23 tasks complete ⏳
+
+**Overall Progress**: 104/127 tasks complete (82%)
+
+### Dependencies & Blockers
+
+#### External Dependencies
+- [ ] Verify FastMCP compatibility with Python 3.10+
+- [ ] Confirm sentence-transformers model availability
+- [ ] Test ChromaDB performance with expected data sizes
+
+#### Technical Blockers
+- [x] **ChromaEmbeddingFunction API compatibility** - ✅ COMPLETE
+- [x] **Algorithms library ingestion** - ✅ COMPLETE: 634 documents ingested
+- [x] **Phase 6.1 coverage improvements** - ✅ COMPLETE
+- [x] **Phase 6.1.1 ChromaDB compatibility** - ✅ COMPLETE
+
+---
+
+## Next Immediate Tasks
+
+1. **Complete Phase 7.2** - Developer documentation (API reference, contributing guidelines)
+2. **Begin Phase 9** - Release & deployment infrastructure
+3. **First Release** - Create initial GitHub release with v0.1.0
+
+**Phase 6.1 Complete ✅** - Unit test suite with 492 tests, improved coverage
+**Phase 6.1.1 Complete ✅** - ChromaDB compatibility resolved, search functionality operational
+**Phase 7.1 Complete ✅** - User documentation (README, quickstart, troubleshooting)
+**Phase 8 Complete ✅** - CLI Interface with 6 commands and 27 tests

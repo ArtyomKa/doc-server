@@ -282,3 +282,90 @@ class DocumentResult(BaseModel):
 6. Documentation and examples
 
 This plan prioritizes a working MVP with core functionality, then expands with CLI tools, testing, and documentation based on the product specification requirements.
+
+---
+
+### Phase 9: Release & Deployment
+**Priority**: High (MVP Release)
+**Timeline**: 1-2 days
+**Distribution**: GitHub Releases
+**Versioning**: Semantic Versioning (0.1.0 start)
+
+#### 9.1 Release Infrastructure
+
+##### Version Management (Manual → Automated Migration Path)
+- [ ] Document manual version bumping process in `RELEASING.md`
+- [ ] Ensure `__init__.py` and `pyproject.toml` version synchronization
+- [ ] Support pre-release versions: `0.1.0-alpha.1`, `0.1.0-beta.1`, `0.1.0-rc.1`
+- [ ] Future: Migration path to `bump2version` or `semantic-release`
+
+##### Build Configuration
+- [ ] Verify hatchling build system configuration in `pyproject.toml`
+- [ ] Create `MANIFEST.in` for source distribution exclusions
+- [ ] Ensure wheel and sdist generation works correctly
+- [ ] Test installation from built artifacts
+
+#### 9.2 GitHub Actions Workflows
+
+##### Release Workflow (`.github/workflows/release.yml`)
+- [ ] **Triggers**:
+  - Tag push matching `v*` (e.g., `v0.1.0`, `v0.2.0-alpha.1`)
+  - Manual workflow dispatch with version input
+- [ ] **Prerequisites**: All CI checks must pass (lint, test, coverage)
+- [ ] **Artifacts**: Build wheel and source distribution
+- [ ] **GitHub Release**: Create release with auto-generated changelog
+- [ ] **Pre-release Detection**: Mark as pre-release for alpha/beta/rc tags
+- [ ] **Assets**: Attach wheel and sdist to release
+
+##### Changelog Generation
+- [ ] Configure changelog generation from conventional commits
+- [ ] Include PR links and contributor attribution
+- [ ] Categorize changes (Features, Fixes, Documentation, etc.)
+
+#### 9.3 Release Process Documentation
+
+##### `RELEASING.md`
+- [ ] Step-by-step manual release instructions
+- [ ] Version bumping checklist
+- [ ] Pre-release testing procedures
+- [ ] Tag naming conventions (`v0.1.0-alpha.1`)
+- [ ] Post-release verification steps
+- [ ] Rollback procedures
+
+##### Versioning Strategy Document
+- [ ] Semantic versioning rules for this project
+- [ ] Pre-release naming conventions
+- [ ] When to bump major/minor/patch
+- [ ] Example version progression: `0.1.0-alpha.1` → `0.1.0-beta.1` → `0.1.0`
+
+#### 9.4 Post-Release Verification
+
+##### Installation Testing
+- [ ] Test installation from GitHub Release asset
+- [ ] Verify `doc-server --version` reports correct version
+- [ ] Test basic functionality after pip install
+- [ ] Verify CLI commands work
+
+##### Release Validation
+- [ ] Automated smoke tests in release workflow
+- [ ] Verify all entry points function correctly
+- [ ] Check that all files are included in distribution
+
+#### 9.5 Migration Path to Automated Versioning
+
+**Phase 9.1**: Manual version management
+**Phase 9.2**: Add `bump2version` tooling
+**Phase 9.3**: Implement conventional commits + `semantic-release`
+
+---
+
+**Phase 9 Acceptance Criteria:**
+- [ ] GitHub Release created automatically on tag push
+- [ ] Manual release workflow works as backup
+- [ ] All CI checks pass before release
+- [ ] Pre-releases marked correctly (alpha/beta/rc)
+- [ ] Changelog generated automatically
+- [ ] Installation from release works correctly
+- [ ] `RELEASING.md` documents the complete process
+
+**Dependencies**: Phase 6 (Testing), Phase 7.1 (User Documentation), Phase 8 (CLI)
