@@ -114,7 +114,7 @@ jobs:
           echo "🧪 Testing version command..."
           VERSION_OUTPUT=$(doc-server --version)
           echo "Version: $VERSION_OUTPUT"
-          if echo "$VERSION_OUTPUT" | grep -qE 'doc-server\s+[0-9]+\.[0-9]+\.[0-9]+'; then
+          if echo "$VERSION_OUTPUT" | grep -qE 'doc-server, version [0-9]+\.[0-9]+\.[0-9]+'; then
             echo "✅ Version command works"
           else
             echo "❌ Version command failed $VERSION_OUTPUT"
@@ -290,10 +290,14 @@ jobs:
           INSTALLED_VERSION=$(doc-server --version)
           echo "Installed: ${INSTALLED_VERSION}"
           
-          if echo "${INSTALLED_VERSION}" | grep -q "${VERSION}"; then
-            echo "✅ Version matches: ${VERSION}"
+          # Normalize version to match Python's PEP 440 (simplified)
+          NORMALIZED_VERSION=$(echo "${VERSION}" | sed -E 's/-alpha\.([0-9]+)/a\1/' | sed -E 's/-beta\.([0-9]+)/b\1/' | sed -E 's/-rc\.([0-9]+)/rc\1/')
+          echo "Normalized expected version: ${NORMALIZED_VERSION}"
+          
+          if echo "${INSTALLED_VERSION}" | grep -q "${NORMALIZED_VERSION}"; then
+            echo "✅ Version matches: ${VERSION} (normalized: ${NORMALIZED_VERSION})"
           else
-            echo "❌ Version mismatch. Expected: ${VERSION}, Got: ${INSTALLED_VERSION}"
+            echo "❌ Version mismatch. Expected: ${VERSION} (normalized: ${NORMALIZED_VERSION}), Got: ${INSTALLED_VERSION}"
             exit 1
           fi
           

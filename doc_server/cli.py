@@ -14,6 +14,7 @@ import shutil
 import sys
 import tempfile
 import time
+from importlib.metadata import version as get_version
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,12 @@ import click
 from click import style
 
 from .config import settings
+
+try:
+    __version__ = get_version("doc-server")
+except Exception:
+    __version__ = "0.1.0"
+
 from .ingestion.document_processor import DocumentProcessor
 from .ingestion.file_filter import FileFilter
 from .ingestion.git_cloner import GitCloner
@@ -49,7 +56,7 @@ class DocServerGroup(click.Group):
 
 
 @click.group(cls=DocServerGroup, invoke_without_command=False)
-@click.version_option(version="0.1.0", prog_name="doc-server")
+@click.version_option(version=__version__, prog_name="doc-server")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.pass_context
 def cli(ctx: click.Context, verbose: bool) -> None:
