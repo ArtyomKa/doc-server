@@ -175,10 +175,10 @@ serve: ## Run MCP server
 		exit 1; \
 	fi
 
-ci: ## Run full CI pipeline (install → lint → typecheck → test-cov)
+ci: ## Run full CI pipeline (dev → lint → typecheck → test-cov)
 	@echo "$(CYAN)Running CI pipeline...$(RESET)"
-	@echo "$(YELLOW)Step 1/4: Installing dependencies...$(RESET)"
-	@$(MAKE) install
+	@echo "$(YELLOW)Step 1/4: Installing dev dependencies...$(RESET)"
+	@$(MAKE) dev
 	@echo "$(YELLOW)Step 2/4: Running linting checks...$(RESET)"
 	@$(MAKE) lint
 	@echo "$(YELLOW)Step 3/4: Running type checking...$(RESET)"

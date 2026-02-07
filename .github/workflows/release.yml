@@ -35,9 +35,20 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Run CI pipeline
+      - name: Install dependencies
+        run: make dev
+
+      - name: Run linting checks
+        run: make lint
+
+      - name: Run type checking
+        run: make typecheck
+
+      - name: Run tests with coverage
+        run: make test-cov
+
+      - name: CI Summary
         run: |
-          make ci
           echo "✅ All CI prerequisites passed"
           echo "- Linting: Black, isort, Ruff checks passed"
           echo "- Type checking: MyPy checks passed"
