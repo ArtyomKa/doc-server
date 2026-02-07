@@ -36,23 +36,13 @@ venv: ## Create virtual environment only
 
 install: ## Install dependencies
 	@echo "$(CYAN)Installing dependencies...$(RESET)"
-	@uv venv
-	@if uv pip install -e "."; then \
-		echo "$(GREEN)✓ Dependencies installed$(RESET)"; \
-	else \
-		echo "$(RED)✗ Failed to install dependencies$(RESET)"; \
-		exit 1; \
-	fi
+	@uv venv --allow-existing
+	@uv pip install -e "."
 
 dev: ## Install with dev dependencies
 	@echo "$(CYAN)Installing development dependencies...$(RESET)"
-	@uv venv
-	@if uv pip install -e ".[dev]"; then \
-		echo "$(GREEN)✓ Development dependencies installed$(RESET)"; \
-	else \
-		echo "$(RED)✗ Failed to install development dependencies$(RESET)"; \
-		exit 1; \
-	fi
+	@uv venv --allow-existing
+	@uv pip install -e ".[dev]"
 
 format: ## Auto-format code with Black and isort
 	@echo "$(CYAN)Formatting code...$(RESET)"

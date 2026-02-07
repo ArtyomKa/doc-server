@@ -31,7 +31,7 @@ jobs:
         run: uv venv
 
       - name: Install dependencies
-        run: make install
+        run: make dev
 
       - name: Run linting checks
         run: make lint
