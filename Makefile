@@ -30,6 +30,10 @@ help: ## Show this help message
 	@echo "  make test        # Run all tests"
 	@echo "  make ci          # Run full CI pipeline"
 
+venv: ## Create virtual environment only
+	@echo "$(CYAN)Creating virtual environment...$(RESET)"
+	@uv venv
+
 install: ## Install dependencies
 	@echo "$(CYAN)Installing dependencies...$(RESET)"
 	@uv venv
