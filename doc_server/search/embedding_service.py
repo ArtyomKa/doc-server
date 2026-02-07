@@ -94,12 +94,44 @@ class EmbeddingService:
         self.warmup_timeout_seconds = warmup_timeout_seconds
         self.warmup_time_seconds: float | None = None
 
-        # Initialize model with device auto-detection
+        # Initialize model with device auto-detection and retry logic
         actual_device = self._determine_device(device)
         logger.info(f"Loading model {model_name} on device: {actual_device}")
 
-        self.model = SentenceTransformer(model_name, device=actual_device)
-        self.embedding_dimension = self.model.get_sentence_embedding_dimension()
+        # Load model with retries for network resilience in CI
+        max_load_retries = 3
+        load_delay = 2.0
+        last_error: Exception | None = None
+
+        for attempt in range(max_load_retries):
+            try:
+                self.model = SentenceTransformer(model_name, device=actual_device)
+                self.embedding_dimension = self.model.get_sentence_embedding_dimension()
+                if attempt > 0:
+                    logger.info(f"Model loaded successfully on attempt {attempt + 1}")
+                break
+            except Exception as e:
+                last_error = e
+                error_msg = str(e).lower()
+                # Check if it's a network/timeout error
+                if any(
+                    x in error_msg for x in ["timeout", "read", "connection", "network"]
+                ):
+                    if attempt < max_load_retries - 1:
+                        logger.warning(
+                            f"Model loading failed on attempt {attempt + 1}: {e}. "
+                            f"Retrying in {load_delay:.1f}s..."
+                        )
+                        time.sleep(load_delay)
+                        load_delay *= 2  # Exponential backoff
+                    else:
+                        logger.error(
+                            f"Model loading failed after {max_load_retries} attempts"
+                        )
+                        raise
+                else:
+                    # Non-network error, don't retry
+                    raise
 
         # Setup caching
         self.cache: dict[str, Any] = {}
