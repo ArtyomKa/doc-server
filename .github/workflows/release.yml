@@ -110,14 +110,14 @@ jobs:
       - name: Run smoke tests
         run: |
           source .venv/bin/activate
-          
+          echo $(which python)
           echo "🧪 Testing version command..."
           VERSION_OUTPUT=$(doc-server --version)
           echo "Version: $VERSION_OUTPUT"
           if echo "$VERSION_OUTPUT" | grep -qE 'doc-server\s+[0-9]+\.[0-9]+\.[0-9]+'; then
             echo "✅ Version command works"
           else
-            echo "❌ Version command failed"
+            echo "❌ Version command failed $VERSION_OUTPUT"
             exit 1
           fi
           
