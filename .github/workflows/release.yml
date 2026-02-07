@@ -102,12 +102,10 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Create virtual environment
-        run: make install
+        run: uv venv
 
       - name: Install from wheel
-        run: |
-          source .venv/bin/activate
-          pip install dist/*.whl
+        run: uv pip install dist/*.whl
 
       - name: Run smoke tests
         run: |
@@ -261,7 +259,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Create virtual environment
-        run: make install
+        run: uv venv
 
       - name: Verify release installation
         run: |
