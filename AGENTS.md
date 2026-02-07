@@ -33,9 +33,17 @@ Doc Server is an AI-powered documentation management system with intelligent sea
 
 ---
 
+## Agent Rules
+
+1. **Never commit/push without specific approval.**
+2. **Always run linting and formatting checks before finishing a task/assignment that is going to be committed.**
+3. **Before making any modification to the code in a new session, reference [WORKFLOW.md](WORKFLOW.md).**
+
+---
+
 ## Quick Reference
 
-**Development Workflow**: See [WORKFLOW.md](WORKFLOW.md) for setup, testing, and build commands
+**Development Workflow**: See [WORKFLOW.md](WORKFLOW.md) (Must be referenced before code mods) for setup, testing, and build commands
 
 **Testing Guide**: See [TESTING.md](TESTING.md) for running tests, fixtures, and CI/CD information
 

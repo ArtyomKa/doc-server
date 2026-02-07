@@ -101,7 +101,6 @@ class EmbeddingService:
         # Load model with retries for network resilience in CI
         max_load_retries = 3
         load_delay = 2.0
-        last_error: Exception | None = None
 
         for attempt in range(max_load_retries):
             try:
@@ -111,7 +110,6 @@ class EmbeddingService:
                     logger.info(f"Model loaded successfully on attempt {attempt + 1}")
                 break
             except Exception as e:
-                last_error = e
                 error_msg = str(e).lower()
                 # Check if it's a network/timeout error
                 if any(
