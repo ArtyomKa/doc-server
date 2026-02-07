@@ -32,7 +32,8 @@ help: ## Show this help message
 
 install: ## Install dependencies
 	@echo "$(CYAN)Installing dependencies...$(RESET)"
-	@if uv sync; then \
+	@uv venv
+	@if uv pip install -e "."; then \
 		echo "$(GREEN)✓ Dependencies installed$(RESET)"; \
 	else \
 		echo "$(RED)✗ Failed to install dependencies$(RESET)"; \
@@ -41,7 +42,8 @@ install: ## Install dependencies
 
 dev: ## Install with dev dependencies
 	@echo "$(CYAN)Installing development dependencies...$(RESET)"
-	@if uv sync --group dev; then \
+	@uv venv
+	@if uv pip install -e ".[dev]"; then \
 		echo "$(GREEN)✓ Development dependencies installed$(RESET)"; \
 	else \
 		echo "$(RED)✗ Failed to install development dependencies$(RESET)"; \
