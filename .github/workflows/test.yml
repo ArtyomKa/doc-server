@@ -58,14 +58,23 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: huggingface-models-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            huggingface-models-${{ matrix.python-version }}-
+            huggingface-models-
+
       - name: Create virtual environment
         run: uv venv
 
       - name: Install dependencies
         run: make dev
 
-      - name: Run tests with coverage (excluding slow tests)
-        run: uv run pytest tests/ --verbose --tb=short --cov=doc_server --cov-report=term-missing --cov-report=xml --cov-fail-under=85 -m "not slow"
+      - name: Run tests with coverage
+        run: make test-cov
 
   # performance:
   #   name: Performance Tests

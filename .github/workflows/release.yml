@@ -35,6 +35,14 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: huggingface-models-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            huggingface-models-
+
       - name: Install dependencies
         run: make dev
 
