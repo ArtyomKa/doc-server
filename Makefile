@@ -160,10 +160,8 @@ test-fast: ## Run quick tests only (exclude slow/performance/integration markers
 
 build: ## Build wheel and source distribution
 	@echo "$(CYAN)Building distributions...$(RESET)"
-	@echo "$(YELLOW)Installing hatch...$(RESET)"
-	@uv pip install hatch -q
-	@echo "$(YELLOW)Building wheel and sdist...$(RESET)"
-	@if uv run hatch build; then \
+	@echo "$(YELLOW)Building wheel and sdist with hatch...$(RESET)"
+	@if uv tool run hatch build; then \
 		echo "$(GREEN)✓ Build complete$(RESET)"; \
 		echo "$(WHITE)Artifacts:$(RESET)"; \
 		ls -lh dist/*.whl dist/*.tar.gz 2>/dev/null || echo "  No artifacts found"; \
