@@ -630,10 +630,7 @@ class EmbeddingService:
                         # Create zero embeddings as fallback
                         dim = self.embedding_dimension or 384
                         zero_embeddings = np.zeros((len(batch_texts), dim))
-                        if normalize:
-                            zero_embeddings = zero_embeddings / np.linalg.norm(
-                                zero_embeddings, axis=1, keepdims=True
-                            )
+                        # Zero embeddings cannot be normalized, so we skip normalization
                         batch_embeddings_list.append(zero_embeddings)
 
                     batch_start = batch_end

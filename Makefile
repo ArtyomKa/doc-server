@@ -188,11 +188,11 @@ serve: ## Run MCP server
 ci: ## Run full CI pipeline (install → lint → typecheck → test-cov)
 	@echo "$(CYAN)Running CI pipeline...$(RESET)"
 	@echo "$(YELLOW)Step 1/4: Installing dependencies...$(RESET)"
-	@$(MAKE) install > /dev/null
+	@$(MAKE) install
 	@echo "$(YELLOW)Step 2/4: Running linting checks...$(RESET)"
-	@$(MAKE) lint > /dev/null
+	@$(MAKE) lint
 	@echo "$(YELLOW)Step 3/4: Running type checking...$(RESET)"
-	@$(MAKE) typecheck > /dev/null
+	@$(MAKE) typecheck
 	@echo "$(YELLOW)Step 4/4: Running tests with coverage...$(RESET)"
 	@$(MAKE) test-cov
 	@echo "$(GREEN)✓ CI pipeline completed successfully$(RESET)"
