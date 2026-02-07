@@ -97,8 +97,6 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
 
       - name: Create virtual environment
         run: make install
@@ -255,8 +253,6 @@ jobs:
     steps:
       - name: Set up uv
         uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
 
       - name: Create virtual environment
         run: make install
