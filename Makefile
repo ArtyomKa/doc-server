@@ -1,7 +1,7 @@
 # Doc Server Makefile
 # Provides standard targets for development, testing, and CI
 
-.PHONY: help install dev format lint lint-fix typecheck test test-cov test-fast serve ci clean
+.PHONY: help install dev format lint lint-fix typecheck test test-cov test-fast serve ci clean clean-all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -202,3 +202,8 @@ clean: ## Clean cache files and artifacts
 	@rm -f .coverage coverage.xml 2>/dev/null || true
 	@echo "$(YELLOW)UV cache can be cleaned manually with: uv cache clean$(RESET)"
 	@echo "$(GREEN)✓ Clean completed$(RESET)"
+
+clean-all: clean ## Clean everything including virtual environment
+	@echo "$(CYAN)Cleaning virtual environment...$(RESET)"
+	@rm -rf .venv 2>/dev/null || true
+	@echo "$(GREEN)✓ Clean-all completed (venv removed)$(RESET)"
