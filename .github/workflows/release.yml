@@ -196,6 +196,10 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
+          # Normalize version to PEP 440 format for wheel filenames
+          NORMALIZED_VERSION=$(echo "${VERSION}" | sed -E 's/-alpha\.([0-9]+)/a\1/' | sed -E 's/-beta\.([0-9]+)/b\1/' | sed -E 's/-rc\.([0-9]+)/rc\1/')
+          echo "normalized_version=$NORMALIZED_VERSION" >> $GITHUB_OUTPUT
+          
           # Check if prerelease (contains alpha, beta, or rc)
           if [[ "$VERSION" =~ -(alpha|beta|rc) ]]; then
             echo "prerelease=true" >> $GITHUB_OUTPUT
@@ -228,10 +232,10 @@ jobs:
             ### From GitHub Release
             ```bash
             # Install wheel
-            pip install doc-server-${{ steps.version.outputs.version }}-py3-none-any.whl
+            pip install doc_server-${{ steps.version.outputs.normalized_version }}-py3-none-any.whl
             
             # Or install from source
-            pip install doc-server-${{ steps.version.outputs.version }}.tar.gz
+            pip install doc_server-${{ steps.version.outputs.normalized_version }}.tar.gz
             ```
             
             ## Quick Start
@@ -248,8 +252,8 @@ jobs:
             ```
             
             ## Artifacts
-            - **Wheel**: `doc-server-${{ steps.version.outputs.version }}-py3-none-any.whl`
-            - **Source Distribution**: `doc-server-${{ steps.version.outputs.version }}.tar.gz`
+            - **Wheel**: `doc_server-${{ steps.version.outputs.normalized_version }}-py3-none-any.whl`
+            - **Source Distribution**: `doc_server-${{ steps.version.outputs.normalized_version }}.tar.gz`
           files: |
             dist/*.whl
             dist/*.tar.gz
@@ -285,11 +289,17 @@ jobs:
           source .venv/bin/activate
           
           VERSION="${{ needs.release.outputs.version }}"
+          
+          # Normalize version to PEP 440 format (e.g., 0.1.0-alpha.6 -> 0.1.0a6)
+          NORMALIZED_VERSION=$(echo "${VERSION}" | sed -E 's/-alpha\.([0-9]+)/a\1/' | sed -E 's/-beta\.([0-9]+)/b\1/' | sed -E 's/-rc\.([0-9]+)/rc\1/')
+          
+          # Wheel filename uses underscore and normalized version per PEP 427/440
+          WHEEL_FILE="doc_server-${NORMALIZED_VERSION}-py3-none-any.whl"
           RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}"
-          WHEEL_FILE="doc-server-${VERSION}-py3-none-any.whl"
           
           echo "Verifying release v${VERSION}..."
           echo "Release URL: ${RELEASE_URL}"
+          echo "Wheel file: ${WHEEL_FILE}"
           
           # Download and install from release
           echo "📥 Downloading wheel from release..."
@@ -308,9 +318,6 @@ jobs:
           echo "🔍 Verifying version..."
           INSTALLED_VERSION=$(doc-server --version)
           echo "Installed: ${INSTALLED_VERSION}"
-          
-          # Normalize version to match Python's PEP 440 (simplified)
-          NORMALIZED_VERSION=$(echo "${VERSION}" | sed -E 's/-alpha\.([0-9]+)/a\1/' | sed -E 's/-beta\.([0-9]+)/b\1/' | sed -E 's/-rc\.([0-9]+)/rc\1/')
           echo "Normalized expected version: ${NORMALIZED_VERSION}"
           
           if echo "${INSTALLED_VERSION}" | grep -q "${NORMALIZED_VERSION}"; then
