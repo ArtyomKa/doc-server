@@ -46,6 +46,13 @@ log_format: "json"
 mcp_transport: "stdio"
 mcp_debug: false
 
+# Remote Backend settings (uncomment to use remote mode)
+# mode: "remote"  # or "local"
+# backend_url: "http://localhost:8000"
+# backend_api_key: ""  # Set your API key for production
+# backend_timeout: 30
+# backend_verify_ssl: true
+
 # Example overrides for different use cases:
 
 # Development environment example:
