@@ -1,7 +1,7 @@
 # Doc Server Makefile
 # Provides standard targets for development, testing, and CI
 
-.PHONY: help install dev format lint lint-fix typecheck test test-cov test-fast serve ci clean clean-all
+.PHONY: help install dev format lint lint-fix typecheck test test-cov test-fast serve backend docker-build docker-run test-remote ci clean clean-all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -172,6 +172,42 @@ serve: ## Run MCP server
 		echo "$(GREEN)✓ MCP server stopped$(RESET)"; \
 	else \
 		echo "$(RED)✗ MCP server failed$(RESET)"; \
+		exit 1; \
+	fi
+
+backend: ## Run Remote Backend server
+	@echo "$(CYAN)Starting Remote Backend server...$(RESET)"
+	@if uv run doc-server backend --port 8000; then \
+		echo "$(GREEN)✓ Backend server stopped$(RESET)"; \
+	else \
+		echo "$(RED)✗ Backend server failed$(RESET)"; \
+		exit 1; \
+	fi
+
+docker-build: ## Build Docker image
+	@echo "$(CYAN)Building Docker image...$(RESET)"
+	@if docker build -t doc-server .; then \
+		echo "$(GREEN)✓ Docker build complete$(RESET)"; \
+	else \
+		echo "$(RED)✗ Docker build failed$(RESET)"; \
+		exit 1; \
+	fi
+
+docker-run: ## Run Docker container (detached, port 8000)
+	@echo "$(CYAN)Running Docker container...$(RESET)"
+	@if docker run -d -p 8000:8000 -v $$(pwd)/data:/data -e DOC_SERVER_BACKEND_API_KEY=test doc-server; then \
+		echo "$(GREEN)✓ Docker container started on port 8000$(RESET)"; \
+	else \
+		echo "$(RED)✗ Docker run failed$(RESET)"; \
+		exit 1; \
+	fi
+
+test-remote: ## Run remote backend integration tests
+	@echo "$(CYAN)Running remote backend integration tests...$(RESET)"
+	@if uv run pytest tests/test_api_client.py tests/test_api_server.py --verbose; then \
+		echo "$(GREEN)✓ Remote backend tests passed$(RESET)"; \
+	else \
+		echo "$(RED)✗ Remote backend tests failed$(RESET)"; \
 		exit 1; \
 	fi
 
