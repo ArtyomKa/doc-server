@@ -1,7 +1,7 @@
 # Doc Server Makefile
 # Provides standard targets for development, testing, and CI
 
-.PHONY: help install dev format lint lint-fix typecheck test test-cov test-fast serve backend docker-build docker-run test-remote ci clean clean-all
+.PHONY: help install dev format lint lint-fix typecheck test test-cov test-fast serve backend backend-stop docker-build docker-run docker-stop test-remote ci clean clean-all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -200,6 +200,22 @@ docker-run: ## Run Docker container (detached, port 8000)
 	else \
 		echo "$(RED)✗ Docker run failed$(RESET)"; \
 		exit 1; \
+	fi
+
+docker-stop: ## Stop running Docker container
+	@echo "$(CYAN)Stopping Docker container...$(RESET)"
+	@if docker stop $$(docker ps -q --filter ancestor=doc-server) 2>/dev/null; then \
+		echo "$(GREEN)✓ Docker container stopped$(RESET)"; \
+	else \
+		echo "$(YELLOW)No Docker container running$(RESET)"; \
+	fi
+
+backend-stop: ## Stop backend server on port 8000
+	@echo "$(CYAN)Stopping backend server...$(RESET)"
+	@if fuser -k 8000/tcp 2>/dev/null; then \
+		echo "$(GREEN)✓ Server on port 8000 stopped$(RESET)"; \
+	else \
+		echo "$(YELLOW)No server running on port 8000$(RESET)"; \
 	fi
 
 test-remote: ## Run remote backend integration tests
