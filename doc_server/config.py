@@ -4,9 +4,12 @@ Configuration management for doc-server.
 
 import re
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from doc_server.utils import _sanitize_input as _utils_sanitize_input
 
 
 class Settings(BaseSettings):
@@ -75,6 +78,15 @@ class Settings(BaseSettings):
     # MCP Settings
     mcp_transport: str = "stdio"
     mcp_debug: bool = False
+
+    # Mode Configuration (local vs remote)
+    mode: Literal["local", "remote"] = "local"
+
+    # Remote Backend Configuration
+    backend_url: str = "http://localhost:8000"
+    backend_api_key: str = ""
+    backend_timeout: int = 30
+    backend_verify_ssl: bool = True
 
     # Path Properties for storage directories
     @property
@@ -206,6 +218,11 @@ class Settings(BaseSettings):
         """Initialize settings after creation."""
         # Load YAML configuration if available
         self.load_yaml_config()
+
+
+def _sanitize_input(input_str: str, max_length: int = 1000) -> str:
+    """Sanitize user input to prevent injection attacks."""
+    return _utils_sanitize_input(input_str, max_length)
 
 
 # Global settings instance

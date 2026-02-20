@@ -42,6 +42,105 @@ configure_structlog()
 logger = get_logger(__name__)
 
 
+def _run_remote_ingest(
+    source: str, library_id: str, batch_size: int | None, verbose: bool
+) -> None:
+    """Run ingestion via remote backend API."""
+    import asyncio
+
+    from .api_client import APIClient
+
+    click.echo(
+        style("📚 Ingesting documentation (remote mode)...", fg="cyan", bold=True)
+    )
+    click.echo(style(f"   Source: {source}", fg="white"))
+    click.echo(style(f"   Library: {library_id}", fg="white"))
+    click.echo(style(f"   Backend: {settings.backend_url}", fg="white"))
+    click.echo("")
+
+    async def _do_ingest():
+        async with APIClient(
+            base_url=settings.backend_url,
+            api_key=settings.backend_api_key,
+            timeout=settings.backend_timeout,
+            verify_ssl=settings.backend_verify_ssl,
+        ) as client:
+            result = await client.ingest(
+                source=source,
+                library_id=library_id,
+                version=None,
+                batch_size=batch_size or 32,
+            )
+            click.echo("")
+            click.echo(
+                style(
+                    f"✓ Successfully ingested {result.documents_ingested} documents",
+                    fg="green",
+                    bold=True,
+                )
+            )
+
+    try:
+        asyncio.run(_do_ingest())
+    except Exception as e:
+        click.echo("")
+        click.echo(style(f"❌ Remote ingestion failed: {e}", fg="red", bold=True))
+        if verbose:
+            import traceback
+
+            click.echo("")
+            click.echo(traceback.format_exc())
+        sys.exit(1)
+
+
+def _run_remote_search(query: str, library_id: str, limit: int, verbose: bool) -> None:
+    """Run search via remote backend API."""
+    import asyncio
+
+    from .api_client import APIClient
+
+    click.echo(
+        style("🔍 Searching documentation (remote mode)...", fg="cyan", bold=True)
+    )
+    click.echo(style(f"   Query: {query}", fg="white"))
+    click.echo(style(f"   Library: {library_id}", fg="white"))
+    click.echo(style(f"   Backend: {settings.backend_url}", fg="white"))
+    click.echo("")
+
+    async def _do_search():
+        async with APIClient(
+            base_url=settings.backend_url,
+            api_key=settings.backend_api_key,
+            timeout=settings.backend_timeout,
+            verify_ssl=settings.backend_verify_ssl,
+        ) as client:
+            results = await client.search(query, library_id, limit)
+
+            if not results:
+                click.echo(style("No results found.", fg="yellow"))
+                return
+
+            click.echo(style(f"Found {len(results)} results:\n", fg="green"))
+            for i, result in enumerate(results, 1):
+                click.echo(f"{i}. {result.file_path} (score: {result.score:.2f})")
+                # Show first 200 chars of content
+                content_preview = result.content[:200].replace("\n", " ")
+                click.echo(f"   {content_preview}...")
+                click.echo("")
+
+    try:
+        asyncio.run(_do_search())
+    except Exception as e:
+        click.echo("")
+        click.echo(style(f"❌ Remote search failed: {e}", fg="red", bold=True))
+        if verbose:
+            import traceback
+
+            click.echo("")
+            click.echo(traceback.format_exc())
+        sys.exit(1)
+
+
 # Custom click group for better help formatting
 class DocServerGroup(click.Group):
     """Custom click group with formatted help."""
@@ -126,6 +225,11 @@ def ingest(
         doc-server ingest -s ./local-docs -l /project-docs
     """
     verbose = ctx.obj.get("verbose", False)
+
+    # Check if remote mode is enabled
+    if settings.mode == "remote":
+        _run_remote_ingest(source, library_id, batch_size, verbose)
+        return
 
     click.echo(style("📚 Ingesting documentation...", fg="cyan", bold=True))
     click.echo(style(f"   Source: {source}", fg="white"))
@@ -345,6 +449,11 @@ def search(
         doc-server search -q "binary search" -l /algorithms -f json
     """
     verbose = ctx.obj.get("verbose", False)
+
+    # Check if remote mode is enabled
+    if settings.mode == "remote":
+        _run_remote_search(query, library_id, limit, verbose)
+        return
 
     try:
         # Validate inputs
@@ -716,6 +825,84 @@ def serve(ctx: click.Context, transport: str, host: str, port: int) -> None:
         sys.exit(1)
 
 
+@click.command("backend")
+@click.option(
+    "--host",
+    "-h",
+    default="0.0.0.0",
+    help="Host to bind to (default: 0.0.0.0)",
+)
+@click.option(
+    "--port",
+    "-p",
+    default=8000,
+    type=int,
+    help="Port to bind to (default: 8000)",
+)
+@click.option(
+    "--workers",
+    "-w",
+    default=1,
+    type=int,
+    help="Number of worker processes (default: 1)",
+)
+@click.pass_context
+def backend(ctx: click.Context, host: str, port: int, workers: int) -> None:
+    """
+    Start the Doc Server backend server.
+
+    This starts the REST API server that can be used by remote clients.
+
+    Examples:
+        doc-server backend
+        doc-server backend -h 0.0.0.0 -p 8000
+    """
+    verbose = ctx.obj.get("verbose", False)
+
+    click.echo(style("🚀 Starting doc-server backend server...", fg="cyan", bold=True))
+    click.echo("")
+
+    if not settings.backend_api_key:
+        click.echo(
+            style(
+                "⚠️  Warning: No API key configured. Set DOC_SERVER_API_KEY environment variable.",
+                fg="yellow",
+                bold=True,
+            )
+        )
+        click.echo("")
+
+    click.echo(style(f"Host: {host}", fg="white"))
+    click.echo(style(f"Port: {port}", fg="white"))
+    click.echo(style(f"Workers: {workers}", fg="white"))
+    click.echo("")
+    click.echo(style("Press Ctrl+C to stop the server", fg="yellow"))
+    click.echo("")
+
+    try:
+        import uvicorn
+
+        uvicorn.run(
+            "doc_server.api_server:app",
+            host=host,
+            port=port,
+            workers=workers,
+            reload=False,
+        )
+    except KeyboardInterrupt:
+        click.echo("")
+        click.echo(style("👋 Server stopped", fg="green"))
+    except Exception as e:
+        click.echo("")
+        click.echo(style(f"❌ Server error: {e}", fg="red", bold=True))
+        if verbose:
+            import traceback
+
+            click.echo("")
+            click.echo(traceback.format_exc())
+        sys.exit(1)
+
+
 def _validate_startup() -> dict[str, Any]:
     """Validate startup dependencies."""
     checks: dict[str, Any] = {
@@ -885,6 +1072,11 @@ def health(ctx: click.Context) -> None:
 def main() -> None:
     """Main entry point for the CLI."""
     cli()
+
+
+# Register backend command explicitly (in case decorator didn't work)
+if "backend" not in cli.commands:
+    cli.add_command(backend)
 
 
 if __name__ == "__main__":
