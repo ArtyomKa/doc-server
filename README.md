@@ -23,6 +23,23 @@ doc-server serve
 - **Multi-Source Ingestion**: Clone Git repositories, extract ZIP archives, or use local directories
 - **MCP Integration**: Full Model Context Protocol server implementation
 - **CLI Interface**: Comprehensive command-line tool for all operations
+- **Remote Backend**: Centralized server mode for team collaboration
+
+## Deployment
+
+Doc Server can run locally or as a remote backend server.
+
+**Remote Backend Mode:**
+```bash
+# Start the server
+doc-server backend --port 8000
+
+# Configure client to use it
+export DOC_SERVER_MODE=remote
+export DOC_SERVER_BACKEND_URL=http://localhost:8000
+```
+
+See [Deployment Guide](docs/deployment.md) for Docker and production details.
 
 ## Documentation
 
@@ -33,6 +50,7 @@ See the [docs/](docs/) directory for complete documentation:
 - [CLI Reference](docs/cli.md) - All CLI commands and options
 - [MCP Tools](docs/mcp-tools.md) - Available MCP tools and usage
 - [Configuration](docs/configuration.md) - Configuration options
+- [Deployment](docs/deployment.md) - Remote backend and Docker deployment
 - [Architecture](docs/architecture.md) - System design and data flows
 - [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
 - [Examples](docs/examples.md) - Usage examples and tutorials

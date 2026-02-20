@@ -59,6 +59,13 @@ log_format: "json"
 # MCP server settings
 mcp_transport: "stdio"
 mcp_debug: false
+
+# Remote Backend settings
+mode: "local"  # or "remote"
+backend_url: "http://localhost:8000"
+backend_api_key: ""
+backend_timeout: 30
+backend_verify_ssl: true
 ```
 
 ## Environment Variables
@@ -72,6 +79,9 @@ export DOC_SERVER_EMBEDDING_DEVICE="cpu"
 export DOC_SERVER_DEFAULT_TOP_K=10
 export DOC_SERVER_LOG_LEVEL="INFO"
 export DOC_SERVER_MCP_TRANSPORT="stdio"
+export DOC_SERVER_MODE="remote"
+export DOC_SERVER_BACKEND_URL="http://localhost:8000"
+export DOC_SERVER_BACKEND_API_KEY="your-secret-key"
 ```
 
 ## Configuration Options
@@ -114,6 +124,16 @@ export DOC_SERVER_MCP_TRANSPORT="stdio"
 |--------|----------------------|---------|-------------|
 | `mcp_transport` | `DOC_SERVER_MCP_TRANSPORT` | `stdio` | Transport type (`stdio` or `sse`) |
 | `mcp_debug` | `DOC_SERVER_MCP_DEBUG` | `false` | Enable debug mode for MCP |
+
+### Remote Backend Settings
+
+| Option | Environment Variable | Default | Description |
+|--------|----------------------|---------|-------------|
+| `mode` | `DOC_SERVER_MODE` | `local` | Operation mode (`local` or `remote`) |
+| `backend_url` | `DOC_SERVER_BACKEND_URL` | `http://localhost:8000` | URL of the remote backend server |
+| `backend_api_key` | `DOC_SERVER_BACKEND_API_KEY` | `""` | API Key for backend authentication |
+| `backend_timeout` | `DOC_SERVER_BACKEND_TIMEOUT` | `30` | Request timeout in seconds |
+| `backend_verify_ssl` | `DOC_SERVER_BACKEND_VERIFY_SSL` | `true` | Verify SSL certificates |
 
 ### Logging Settings
 
