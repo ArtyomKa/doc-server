@@ -154,3 +154,7 @@ vector_db/
 test_data/
 sample_repos/
 chroma/
+
+# Worktrees
+.worktrees/
+worktrees/
