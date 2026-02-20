@@ -960,6 +960,10 @@ def _validate_startup() -> dict[str, Any]:
 
 def _get_health_status() -> dict[str, Any]:
     """Get health status of the server."""
+    # Check if remote mode is enabled
+    if settings.mode == "remote":
+        return _get_remote_health_status()
+
     health: dict[str, Any] = {
         "status": "healthy",
         "version": "1.0.0",
@@ -1005,6 +1009,38 @@ def _get_health_status() -> dict[str, Any]:
         health["status"] = "unhealthy"
 
     return health
+
+
+def _get_remote_health_status() -> dict[str, Any]:
+    """Get health status from remote backend API."""
+    import asyncio
+
+    from .api_client import APIClient
+
+    async def _do_health_check() -> dict[str, Any]:
+        async with APIClient(
+            base_url=settings.backend_url,
+            api_key=settings.backend_api_key,
+            timeout=settings.backend_timeout,
+            verify_ssl=settings.backend_verify_ssl,
+        ) as client:
+            result = await client.health_check()
+            return {
+                "status": result.status,
+                "version": "remote",
+                "timestamp": result.timestamp or time.time(),
+                "components": result.components,
+            }
+
+    try:
+        return asyncio.run(_do_health_check())
+    except Exception as exc:
+        return {
+            "status": "unhealthy",
+            "version": "unknown",
+            "timestamp": time.time(),
+            "components": {"remote": {"status": "unhealthy", "error": str(exc)}},
+        }
 
 
 @cli.command()
