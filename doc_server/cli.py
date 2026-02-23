@@ -58,7 +58,7 @@ def _run_remote_ingest(
     click.echo(style(f"   Backend: {settings.backend_url}", fg="white"))
     click.echo("")
 
-    async def _do_ingest():
+    async def _do_ingest() -> None:
         async with APIClient(
             base_url=settings.backend_url,
             api_key=settings.backend_api_key,
@@ -107,7 +107,7 @@ def _run_remote_search(query: str, library_id: str, limit: int, verbose: bool) -
     click.echo(style(f"   Backend: {settings.backend_url}", fg="white"))
     click.echo("")
 
-    async def _do_search():
+    async def _do_search() -> None:
         async with APIClient(
             base_url=settings.backend_url,
             api_key=settings.backend_api_key,

@@ -75,7 +75,7 @@ class APIClient:
             )
         return self._client
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the HTTP client."""
         if self._client:
             await self._client.aclose()
@@ -150,8 +150,10 @@ class APIClient:
         response.raise_for_status()
         return HealthResult(**response.json())
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "APIClient":
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self, exc_type: type | None, exc_val: BaseException | None, exc_tb: Any
+    ) -> None:
         await self.close()

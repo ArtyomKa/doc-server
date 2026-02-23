@@ -1,5 +1,6 @@
 """FastAPI server for remote Doc Server backend."""
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -70,7 +71,7 @@ def get_settings() -> config.Settings:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Initialize services on startup and clean up on shutdown."""
     logger.info("Starting Doc Server Backend API")
 
@@ -111,7 +112,7 @@ async def verify_api_key(request: Request) -> bool:
 
 
 @app.get("/api/v1/health", response_model=HealthResponse)
-async def health_check():
+async def health_check() -> HealthResponse:
     """Check server health status."""
     # Check if we can import and initialize components
     vector_store_status = "unknown"
@@ -134,7 +135,7 @@ async def health_check():
 
 
 @app.post("/api/v1/search", response_model=list[SearchResult])
-async def search(request: SearchRequest):
+async def search(request: SearchRequest) -> list[SearchResult]:
     """Search through ingested documentation."""
     try:
         from doc_server.mcp_server import search_docs
@@ -170,7 +171,7 @@ async def search(request: SearchRequest):
     response_model=IngestResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def ingest(request: IngestRequest):
+async def ingest(request: IngestRequest) -> IngestResponse:
     """Trigger full ingestion pipeline."""
     try:
         from doc_server.mcp_server import ingest_library
@@ -206,7 +207,7 @@ async def ingest(request: IngestRequest):
 
 
 @app.get("/api/v1/libraries", response_model=list[LibraryInfo])
-async def list_libraries():
+async def list_libraries() -> list[LibraryInfo]:
     """List all available libraries."""
     try:
         from doc_server.mcp_server import list_libraries as mcp_list_libraries
@@ -231,7 +232,7 @@ async def list_libraries():
 
 
 @app.delete("/api/v1/libraries/{library_id}", response_model=bool)
-async def remove_library(library_id: str):
+async def remove_library(library_id: str) -> bool:
     """Remove a library and its documents."""
     try:
         from doc_server.mcp_server import remove_library as mcp_remove_library

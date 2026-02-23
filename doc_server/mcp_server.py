@@ -237,7 +237,7 @@ async def search_docs(
 
             # Perform search
             search_start = time.time()
-            results = search.search(
+            local_results = search.search(
                 query=query,
                 library_id=normalized_library_id,
                 n_results=limit,
@@ -245,7 +245,7 @@ async def search_docs(
             search_time = time.time() - search_start
 
             # Convert to DocumentResult and then to dict
-            document_results = [_convert_search_result(r) for r in results]
+            document_results = [_convert_search_result(r) for r in local_results]
             output = [r.to_dict() for r in document_results]
 
             # Log completion with timing
@@ -368,7 +368,7 @@ async def list_libraries() -> list[dict[str, Any]]:
         vector_store = get_vector_store()
         collections = vector_store.list_collections()
 
-        libraries = []
+        local_libraries = []
         for collection in collections:
             try:
                 info = LibraryInfo(
@@ -380,13 +380,13 @@ async def list_libraries() -> list[dict[str, Any]]:
                     ),
                     created_at=collection.get("metadata", {}).get("created_at", 0.0),
                 )
-                libraries.append(info.to_dict())
+                local_libraries.append(info.to_dict())
             except Exception as e:
                 logger.warning(f"Error processing collection info: {e}")
                 continue
 
-        logger.info(f"Found {len(libraries)} libraries")
-        return libraries
+        logger.info(f"Found {len(local_libraries)} libraries")
+        return local_libraries
 
     except Exception as e:
         logger.error(f"Failed to list libraries: {e}", exc_info=True)
@@ -753,15 +753,15 @@ async def ingest_library(source: str, library_id: str) -> dict[str, Any]:
             shutil.rmtree(temp_dir)
             logger.info(f"Cleaned up temporary directory: {temp_dir}")
 
-        result = {
+        local_result = {
             "success": True,
             "documents_ingested": total_added,
             "library_id": normalized_library_id,
             "source_type": source_type,
         }
 
-        logger.info(f"Ingestion complete: {result}")
-        return result
+        logger.info(f"Ingestion complete: {local_result}")
+        return local_result
 
     except Exception as e:
         logger.error(f"Ingestion failed: {e}", exc_info=True)
