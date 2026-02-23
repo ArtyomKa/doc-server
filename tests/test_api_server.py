@@ -1,6 +1,6 @@
 """Tests for API Server module."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -172,14 +172,16 @@ class TestAPIServer:
         with TestClient(app) as client:
             # Mock the search_docs function to return a result
             with patch("doc_server.mcp_server.search_docs") as mock_search:
-                mock_search.fn.return_value = [
-                    {
-                        "content": "test content",
-                        "file_path": "test.py",
-                        "relevance_score": 0.85,
-                        "metadata": {},
-                    }
-                ]
+                mock_search.fn = AsyncMock(
+                    return_value=[
+                        {
+                            "content": "test content",
+                            "file_path": "test.py",
+                            "relevance_score": 0.85,
+                            "metadata": {},
+                        }
+                    ]
+                )
 
                 response = client.post(
                     "/api/v1/search",
