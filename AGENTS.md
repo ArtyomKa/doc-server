@@ -47,6 +47,8 @@ Doc Server is an AI-powered documentation management system with intelligent sea
 
 **Testing Guide**: See [TESTING.md](TESTING.md) for running tests, fixtures, and CI/CD information
 
+> **Note**: The test suite takes a long time to run. Use increased timeout: `pytest --timeout=300`
+
 **Code Style Guidelines**: See [CODING_STANDARDS.md](CODING_STANDARDS.md) for formatting, types, and testing patterns
 
 ---

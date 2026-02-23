@@ -30,9 +30,11 @@ make serve        # Run server
 
 ## Running Tests
 
+> **Note**: The test suite takes a long time to run. Use increased timeout: `uv run pytest --timeout=300`
+
 ```bash
-# Run all tests
-uv run pytest
+# Run all tests (with increased timeout)
+uv run pytest --timeout=300
 
 # Run specific test file
 uv run pytest tests/test_git_cloner.py
