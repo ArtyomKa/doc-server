@@ -1,13 +1,15 @@
 """Tests for API Client module."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from doc_server.api_client import (
     APIClient,
-    SearchResult,
-    LibraryInfo,
-    IngestResult,
     HealthResult,
+    IngestResult,
+    LibraryInfo,
+    SearchResult,
 )
 
 

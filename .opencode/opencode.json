@@ -2,11 +2,13 @@
   "$schema": "https://opencode.ai/config.json",
     "mcp": {
     "doc-server": {
-        "type": "local",
-      "command": ["uv", "run", "doc-server", "serve"],
+      "type": "local",
+      "command": ["uv", "run", "doc-server", "serve", "-t", "stdio"],
       "environment": {
-        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
-        "DOC_SERVER_STORAGE_PATH": "/home/artyom/.doc-server"
+        // "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        // "DOC_SERVER_STORAGE_PATH": "/home/artyom/.doc-server",
+        "DOC_SERVER_MODE": "remote",
+        "DOC_SERVER_BACKEND_URL": "http://localhost:8000"
       }
     }
   }

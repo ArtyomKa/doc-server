@@ -1,16 +1,18 @@
 """Tests for API Server module."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
+
 from doc_server.api_server import (
-    app,
-    SearchRequest,
+    HealthResponse,
     IngestRequest,
-    SearchResult,
     IngestResponse,
     LibraryInfo,
-    HealthResponse,
+    SearchRequest,
+    SearchResult,
+    app,
 )
 
 
@@ -163,3 +165,28 @@ class TestAPIServer:
             response = client.delete("/api/v1/libraries/test")
             # Will be 503 if services not initialized or 500 due to signal issue in tests
             assert response.status_code in [200, 500, 503]
+
+    def test_search_endpoint_returns_score_field(self):
+        """Test that search endpoint returns 'score' field in response."""
+        with TestClient(app) as client:
+            # Mock the search_docs function to return a result
+            with patch("doc_server.mcp_server.search_docs") as mock_search:
+                mock_search.fn.return_value = [
+                    {
+                        "content": "test content",
+                        "file_path": "test.py",
+                        "relevance_score": 0.85,
+                        "metadata": {},
+                    }
+                ]
+
+                response = client.post(
+                    "/api/v1/search",
+                    json={"query": "test query", "library_id": "/test", "limit": 10},
+                )
+
+                assert response.status_code == 200
+                data = response.json()
+                assert len(data) == 1
+                assert "score" in data[0]
+                assert data[0]["score"] == 0.85

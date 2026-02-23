@@ -144,13 +144,15 @@ async def search(request: SearchRequest):
         sanitized_library_id = _sanitize_input(request.library_id)
 
         # Call search via .fn attribute
-        results = search_docs.fn(sanitized_query, sanitized_library_id, request.limit)
+        results = await search_docs.fn(
+            sanitized_query, sanitized_library_id, request.limit
+        )
 
         return [
             SearchResult(
                 content=r["content"],
                 file_path=r["file_path"],
-                score=r["score"],
+                score=r.get("relevance_score", 0.0),
                 metadata=r.get("metadata", {}),
             )
             for r in results
@@ -178,7 +180,7 @@ async def ingest(request: IngestRequest):
         sanitized_library_id = _sanitize_input(request.library_id)
 
         # Call ingest via .fn attribute - note: version not in the mcp function
-        result = ingest_library.fn(sanitized_source, sanitized_library_id)
+        result = await ingest_library.fn(sanitized_source, sanitized_library_id)
 
         if result.get("success"):
             return IngestResponse(
@@ -209,7 +211,7 @@ async def list_libraries():
     try:
         from doc_server.mcp_server import list_libraries as mcp_list_libraries
 
-        libraries = mcp_list_libraries.fn()
+        libraries = await mcp_list_libraries.fn()
 
         return [
             LibraryInfo(
@@ -237,7 +239,7 @@ async def remove_library(library_id: str):
         # Sanitize input
         sanitized_library_id = _sanitize_input(library_id)
 
-        return mcp_remove_library.fn(sanitized_library_id)
+        return await mcp_remove_library.fn(sanitized_library_id)
     except Exception as e:
         logger.error("Remove library failed", error=str(e))
         raise HTTPException(

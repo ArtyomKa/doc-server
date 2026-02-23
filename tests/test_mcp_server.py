@@ -145,27 +145,31 @@ class TestSearchDocsFunction:
             mock.return_value = search_instance
             yield search_instance
 
-    def test_empty_query_raises_value_error(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_empty_query_raises_value_error(self, mock_hybrid_search):
         """Test that empty query raises ValueError."""
         with pytest.raises(ValueError, match="Query cannot be empty"):
-            search_docs.fn(query="", library_id="/test")
+            await search_docs.fn(query="", library_id="/test")
 
-    def test_whitespace_query_raises_value_error(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_whitespace_query_raises_value_error(self, mock_hybrid_search):
         """Test that whitespace-only query raises ValueError."""
         with pytest.raises(ValueError, match="Query cannot be empty"):
-            search_docs.fn(query="   ", library_id="/test")
+            await search_docs.fn(query="   ", library_id="/test")
 
-    def test_empty_library_id_raises_value_error(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_empty_library_id_raises_value_error(self, mock_hybrid_search):
         """Test that empty library_id raises ValueError."""
         with pytest.raises(ValueError, match="Library ID cannot be empty"):
-            search_docs.fn(query="test", library_id="")
+            await search_docs.fn(query="test", library_id="")
 
-    def test_search_docs_normalizes_library_id(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_search_docs_normalizes_library_id(self, mock_hybrid_search):
         """Test that library_id is normalized."""
         mock_results = []
         mock_hybrid_search.search.return_value = mock_results
 
-        search_docs.fn(query="test", library_id="pandas", limit=10)
+        await search_docs.fn(query="test", library_id="pandas", limit=10)
 
         # Should normalize to /pandas
         mock_hybrid_search.search.assert_called_once_with(
@@ -174,12 +178,13 @@ class TestSearchDocsFunction:
             n_results=10,
         )
 
-    def test_search_docs_with_slash_prefix(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_search_docs_with_slash_prefix(self, mock_hybrid_search):
         """Test that library_id with slash is handled correctly."""
         mock_results = []
         mock_hybrid_search.search.return_value = mock_results
 
-        search_docs.fn(query="test", library_id="/pandas", limit=10)
+        await search_docs.fn(query="test", library_id="/pandas", limit=10)
 
         mock_hybrid_search.search.assert_called_once_with(
             query="test",
@@ -187,12 +192,13 @@ class TestSearchDocsFunction:
             n_results=10,
         )
 
-    def test_search_docs_limit_enforced(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_search_docs_limit_enforced(self, mock_hybrid_search):
         """Test that limit is enforced (max 100)."""
         mock_results = []
         mock_hybrid_search.search.return_value = mock_results
 
-        search_docs.fn(query="test", library_id="/test", limit=200)
+        await search_docs.fn(query="test", library_id="/test", limit=200)
 
         mock_hybrid_search.search.assert_called_once_with(
             query="test",
@@ -200,12 +206,13 @@ class TestSearchDocsFunction:
             n_results=100,  # Should be capped at 100
         )
 
-    def test_search_docs_limit_minimum(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_search_docs_limit_minimum(self, mock_hybrid_search):
         """Test that limit minimum is 10."""
         mock_results = []
         mock_hybrid_search.search.return_value = mock_results
 
-        search_docs.fn(query="test", library_id="/test", limit=-5)
+        await search_docs.fn(query="test", library_id="/test", limit=-5)
 
         mock_hybrid_search.search.assert_called_once_with(
             query="test",
@@ -213,7 +220,8 @@ class TestSearchDocsFunction:
             n_results=10,  # Should default to 10
         )
 
-    def test_search_docs_returns_results(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_search_docs_returns_results(self, mock_hybrid_search):
         """Test that search_docs returns results."""
         search_result = SearchResult(
             content="Test content",
@@ -227,7 +235,7 @@ class TestSearchDocsFunction:
         )
         mock_hybrid_search.search.return_value = [search_result]
 
-        result = search_docs.fn(query="test", library_id="/test")
+        result = await search_docs.fn(query="test", library_id="/test")
 
         assert isinstance(result, list)
         assert len(result) == 1
@@ -236,14 +244,16 @@ class TestSearchDocsFunction:
         assert result[0]["library_id"] == "/test"
         assert result[0]["relevance_score"] == 0.95
 
-    def test_search_docs_handles_search_error(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_search_docs_handles_search_error(self, mock_hybrid_search):
         """Test that search errors are wrapped in RuntimeError."""
         mock_hybrid_search.search.side_effect = Exception("Search failed")
 
         with pytest.raises(RuntimeError, match="Search failed"):
-            search_docs.fn(query="test", library_id="/test")
+            await search_docs.fn(query="test", library_id="/test")
 
-    def test_search_docs_multiple_results(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_search_docs_multiple_results(self, mock_hybrid_search):
         """Test search with multiple results."""
         results = [
             SearchResult(
@@ -258,23 +268,25 @@ class TestSearchDocsFunction:
         ]
         mock_hybrid_search.search.return_value = results
 
-        result = search_docs.fn(query="test", library_id="/test", limit=10)
+        result = await search_docs.fn(query="test", library_id="/test", limit=10)
 
         assert len(result) == 5
         assert result[0]["relevance_score"] == 0.9
         assert result[4]["relevance_score"] == 0.5
 
-    def test_invalid_library_id_raises_error(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_invalid_library_id_raises_error(self, mock_hybrid_search):
         """Test that invalid library_id raises ValueError."""
         with pytest.raises(ValueError, match="Invalid library ID"):
-            search_docs.fn(query="test", library_id="/invalid<>/id")
+            await search_docs.fn(query="test", library_id="/invalid<>/id")
 
-    def test_search_docs_default_limit(self, mock_hybrid_search):
+    @pytest.mark.asyncio
+    async def test_search_docs_default_limit(self, mock_hybrid_search):
         """Test that default limit is 10."""
         mock_results = []
         mock_hybrid_search.search.return_value = mock_results
 
-        search_docs.fn(query="test", library_id="/test")
+        await search_docs.fn(query="test", library_id="/test")
 
         mock_hybrid_search.search.assert_called_once_with(
             query="test",
@@ -434,16 +446,18 @@ class TestListLibrariesFunction:
             mock.return_value = store_instance
             yield store_instance
 
-    def test_list_libraries_returns_empty_list(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_list_libraries_returns_empty_list(self, mock_vector_store):
         """Test that empty list is returned when no libraries exist."""
         mock_vector_store.list_collections.return_value = []
 
-        result = list_libraries.fn()
+        result = await list_libraries.fn()
 
         assert isinstance(result, list)
         assert len(result) == 0
 
-    def test_list_libraries_returns_collections(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_list_libraries_returns_collections(self, mock_vector_store):
         """Test that list_libraries returns collection info."""
         mock_vector_store.list_collections.return_value = [
             {
@@ -466,7 +480,7 @@ class TestListLibrariesFunction:
             },
         ]
 
-        result = list_libraries.fn()
+        result = await list_libraries.fn()
 
         assert isinstance(result, list)
         assert len(result) == 2
@@ -475,7 +489,8 @@ class TestListLibrariesFunction:
         assert result[1]["library_id"] == "/fastapi"
         assert result[1]["document_count"] == 50
 
-    def test_list_libraries_handles_missing_metadata(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_list_libraries_handles_missing_metadata(self, mock_vector_store):
         """Test that list_libraries handles missing metadata gracefully."""
         mock_vector_store.list_collections.return_value = [
             {
@@ -485,19 +500,20 @@ class TestListLibrariesFunction:
             }
         ]
 
-        result = list_libraries.fn()
+        result = await list_libraries.fn()
 
         assert isinstance(result, list)
         assert len(result) == 1
         assert result[0]["embedding_model"] == "unknown"
         assert result[0]["created_at"] == 0.0
 
-    def test_list_libraries_handles_error(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_list_libraries_handles_error(self, mock_vector_store):
         """Test that errors are wrapped in RuntimeError."""
         mock_vector_store.list_collections.side_effect = Exception("Database error")
 
         with pytest.raises(RuntimeError, match="Failed to list libraries"):
-            list_libraries.fn()
+            await list_libraries.fn()
 
 
 class TestRemoveLibraryFunction:
@@ -511,47 +527,55 @@ class TestRemoveLibraryFunction:
             mock.return_value = store_instance
             yield store_instance
 
-    def test_remove_library_returns_true_when_existed(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_remove_library_returns_true_when_existed(self, mock_vector_store):
         """Test that True is returned when library existed and was removed."""
         mock_vector_store.delete_collection.return_value = True
 
-        result = remove_library.fn("/pandas")
+        result = await remove_library.fn("/pandas")
 
         assert result is True
         mock_vector_store.delete_collection.assert_called_once_with("/pandas")
 
-    def test_remove_library_returns_false_when_not_existed(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_remove_library_returns_false_when_not_existed(
+        self, mock_vector_store
+    ):
         """Test that False is returned when library didn't exist."""
         mock_vector_store.delete_collection.return_value = False
 
-        result = remove_library.fn("/nonexistent")
+        result = await remove_library.fn("/nonexistent")
 
         assert result is False
 
-    def test_remove_library_normalizes_id(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_remove_library_normalizes_id(self, mock_vector_store):
         """Test that library_id is normalized."""
         mock_vector_store.delete_collection.return_value = True
 
-        remove_library.fn("pandas")
+        await remove_library.fn("pandas")
 
         mock_vector_store.delete_collection.assert_called_once_with("/pandas")
 
-    def test_remove_library_invalid_id_raises_error(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_remove_library_invalid_id_raises_error(self, mock_vector_store):
         """Test that invalid library_id raises ValueError."""
         with pytest.raises(ValueError, match="Invalid library ID"):
-            remove_library.fn("/invalid<>id")
+            await remove_library.fn("/invalid<>id")
 
-    def test_remove_library_empty_id_raises_error(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_remove_library_empty_id_raises_error(self, mock_vector_store):
         """Test that empty library_id raises ValueError."""
         with pytest.raises(ValueError, match="Invalid library ID"):
-            remove_library.fn("")
+            await remove_library.fn("")
 
-    def test_remove_library_handles_error(self, mock_vector_store):
+    @pytest.mark.asyncio
+    async def test_remove_library_handles_error(self, mock_vector_store):
         """Test that errors are wrapped in RuntimeError."""
         mock_vector_store.delete_collection.side_effect = Exception("Database error")
 
         with pytest.raises(RuntimeError, match="Failed to remove library"):
-            remove_library.fn("/test")
+            await remove_library.fn("/test")
 
 
 class TestIngestLibraryFunction:
@@ -575,22 +599,28 @@ class TestIngestLibraryFunction:
                 "store": mock_store,
             }
 
-    def test_ingest_library_empty_source_raises_error(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_empty_source_raises_error(self, mock_dependencies):
         """Test that empty source raises ValueError."""
         with pytest.raises(ValueError, match="Invalid input"):
-            ingest_library.fn("", "/test")
+            await ingest_library.fn("", "/test")
 
-    def test_ingest_library_empty_library_id_raises_error(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_empty_library_id_raises_error(
+        self, mock_dependencies
+    ):
         """Test that empty library_id raises ValueError."""
         with pytest.raises(ValueError, match="Invalid input"):
-            ingest_library.fn("https://github.com/test/repo", "")
+            await ingest_library.fn("https://github.com/test/repo", "")
 
-    def test_ingest_library_invalid_library_id_format(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_invalid_library_id_format(self, mock_dependencies):
         """Test that invalid library_id format raises ValueError."""
         with pytest.raises(ValueError, match="Invalid library ID format"):
-            ingest_library.fn("https://github.com/test/repo", "/invalid<>id")
+            await ingest_library.fn("https://github.com/test/repo", "/invalid<>id")
 
-    def test_ingest_library_sanitizes_input(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_sanitizes_input(self, mock_dependencies):
         """Test that input is sanitized."""
         mock_store_instance = mock_dependencies["store"].return_value
         mock_store_instance.create_collection.return_value = None
@@ -602,9 +632,10 @@ class TestIngestLibraryFunction:
 
         # Expect RuntimeError since ValueError gets wrapped
         with pytest.raises(RuntimeError, match="Ingestion failed"):
-            ingest_library.fn("https://github.com/test/repo", "/test")
+            await ingest_library.fn("https://github.com/test/repo", "/test")
 
-    def test_ingest_library_local_directory(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_local_directory(self, mock_dependencies):
         """Test ingesting from local directory."""
         mock_store_instance = mock_dependencies["store"].return_value
         mock_store_instance.create_collection.return_value = None
@@ -643,33 +674,36 @@ class TestIngestLibraryFunction:
             test_file = Path(tmpdir) / "test.py"
             test_file.write_text("test content")
 
-            result = ingest_library.fn(tmpdir, "/test")
+            result = await ingest_library.fn(tmpdir, "/test")
 
         assert result["success"] is True
         assert result["documents_ingested"] == 1
         assert result["library_id"] == "/test"
         assert result["source_type"] == "local"
 
-    def test_ingest_library_handles_error(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_handles_error(self, mock_dependencies):
         """Test that errors are wrapped in RuntimeError."""
         mock_dependencies["store"].side_effect = Exception("Connection failed")
 
         with pytest.raises(RuntimeError, match="Ingestion failed"):
-            ingest_library.fn("https://github.com/test/repo", "/test")
+            await ingest_library.fn("https://github.com/test/repo", "/test")
 
-    def test_ingest_library_suspicious_pattern_rejected(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_suspicious_pattern_rejected(self, mock_dependencies):
         """Test that suspicious patterns in source are rejected."""
         with pytest.raises(ValueError, match="suspicious pattern"):
-            ingest_library.fn("https://example.com/../../etc/passwd", "/test")
+            await ingest_library.fn("https://example.com/../../etc/passwd", "/test")
 
         with pytest.raises(ValueError, match="suspicious pattern"):
-            ingest_library.fn("https://example.com/${SECRET}", "/test")
+            await ingest_library.fn("https://example.com/${SECRET}", "/test")
 
 
 class TestListLibrariesErrorHandling:
     """Tests for error handling in list_libraries."""
 
-    def test_list_libraries_handles_collection_error(self):
+    @pytest.mark.asyncio
+    async def test_list_libraries_handles_collection_error(self):
         """Test that collection errors are handled gracefully."""
         with patch("doc_server.mcp_server.get_vector_store") as mock_store:
             mock_store.return_value.list_collections.side_effect = Exception(
@@ -677,13 +711,14 @@ class TestListLibrariesErrorHandling:
             )
 
             with pytest.raises(RuntimeError, match="Failed to list libraries"):
-                list_libraries.fn()
+                await list_libraries.fn()
 
 
 class TestRemoveLibraryErrorHandling:
     """Tests for error handling in remove_library."""
 
-    def test_remove_library_database_error(self):
+    @pytest.mark.asyncio
+    async def test_remove_library_database_error(self):
         """Test that database errors are wrapped in RuntimeError."""
         with patch("doc_server.mcp_server.get_vector_store") as mock_store:
             mock_store.return_value.delete_collection.side_effect = Exception(
@@ -691,7 +726,7 @@ class TestRemoveLibraryErrorHandling:
             )
 
             with pytest.raises(RuntimeError, match="Failed to remove library"):
-                remove_library.fn("/test")
+                await remove_library.fn("/test")
 
 
 class TestIngestLibraryErrorHandling:
@@ -715,13 +750,15 @@ class TestIngestLibraryErrorHandling:
                 "store": mock_store,
             }
 
-    def test_ingest_library_local_path_not_found(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_local_path_not_found(self, mock_dependencies):
         """Test that non-existent local path raises error."""
         # ValueError gets wrapped in RuntimeError by the function
         with pytest.raises(RuntimeError, match="Ingestion failed"):
-            ingest_library.fn("/nonexistent/path", "/test")
+            await ingest_library.fn("/nonexistent/path", "/test")
 
-    def test_ingest_library_zip_extraction_error(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_zip_extraction_error(self, mock_dependencies):
         """Test that ZIP extraction errors are handled."""
         mock_store_instance = mock_dependencies["store"].return_value
         mock_store_instance.create_collection.return_value = None
@@ -730,9 +767,10 @@ class TestIngestLibraryErrorHandling:
         mock_zip_instance.extract_archive.side_effect = Exception("Invalid ZIP")
 
         with pytest.raises(RuntimeError, match="Ingestion failed"):
-            ingest_library.fn("/path/to/file.zip", "/test")
+            await ingest_library.fn("/path/to/file.zip", "/test")
 
-    def test_ingest_library_processing_error_continues(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_processing_error_continues(self, mock_dependencies):
         """Test that processing errors don't stop ingestion."""
         import tempfile
         from pathlib import Path
@@ -782,12 +820,13 @@ class TestIngestLibraryErrorHandling:
             test_file.write_text("test content")
 
             # Should not raise, just log warning and continue
-            result = ingest_library.fn(tmpdir, "/test")
+            result = await ingest_library.fn(tmpdir, "/test")
 
         assert result["success"] is True
         assert result["documents_ingested"] == 1  # Only first file processed
 
-    def test_ingest_library_vector_store_error(self, mock_dependencies):
+    @pytest.mark.asyncio
+    async def test_ingest_library_vector_store_error(self, mock_dependencies):
         """Test that vector store errors are handled."""
         mock_store_instance = mock_dependencies["store"].return_value
         mock_store_instance.create_collection.side_effect = Exception(
@@ -795,13 +834,14 @@ class TestIngestLibraryErrorHandling:
         )
 
         with pytest.raises(RuntimeError, match="Ingestion failed"):
-            ingest_library.fn("/test/path", "/test")
+            await ingest_library.fn("/test/path", "/test")
 
 
 class TestListLibrariesPartialErrors:
     """Tests for list_libraries with partial collection errors."""
 
-    def test_list_libraries_handles_partial_collection_errors(self):
+    @pytest.mark.asyncio
+    async def test_list_libraries_handles_partial_collection_errors(self):
         """Test that individual collection processing errors are handled gracefully."""
         with patch("doc_server.mcp_server.get_vector_store") as mock_store:
             # Mock collections with one that will cause an error
@@ -832,7 +872,7 @@ class TestListLibrariesPartialErrors:
                 },
             ]
 
-            result = list_libraries.fn()
+            result = await list_libraries.fn()
 
             # Should process the good collections and skip the bad one
             assert isinstance(result, list)
@@ -848,7 +888,8 @@ class TestListLibrariesPartialErrors:
 class TestHealthCheckErrors:
     """Tests for health_check error handling."""
 
-    def test_health_check_returns_error_status_on_exception(self):
+    @pytest.mark.asyncio
+    async def test_health_check_returns_error_status_on_exception(self):
         """Test that health_check returns error status when health check fails."""
         import time
 
@@ -857,7 +898,7 @@ class TestHealthCheckErrors:
         with patch("doc_server.mcp_server.get_health_status") as mock_health:
             mock_health.side_effect = Exception("Health check failed")
 
-            result = health_check.fn()
+            result = await health_check.fn()
 
             assert result["status"] == "unhealthy"
             assert "error" in result
@@ -869,7 +910,8 @@ class TestHealthCheckErrors:
 class TestValidateServerFunction:
     """Tests for validate_server functionality."""
 
-    def test_validate_server_success(self):
+    @pytest.mark.asyncio
+    async def test_validate_server_success(self):
         """Test validate_server returns success when validation passes."""
         from doc_server.mcp_server import validate_server
 
@@ -880,13 +922,14 @@ class TestValidateServerFunction:
                 "timestamp": 1234567890.0,
             }
 
-            result = validate_server.fn()
+            result = await validate_server.fn()
 
             assert result["status"] == "healthy"
             assert "components" in result
             assert "timestamp" in result
 
-    def test_validate_server_handles_validation_failure(self):
+    @pytest.mark.asyncio
+    async def test_validate_server_handles_validation_failure(self):
         """Test validate_server handles validation failures gracefully."""
 
         from doc_server.mcp_server import validate_server
@@ -894,7 +937,7 @@ class TestValidateServerFunction:
         with patch("doc_server.mcp_server.validate_startup") as mock_validate:
             mock_validate.side_effect = Exception("Validation service unavailable")
 
-            result = validate_server.fn()
+            result = await validate_server.fn()
 
             assert result["status"] == "unhealthy"
             assert "error" in result
@@ -904,23 +947,26 @@ class TestValidateServerFunction:
 class TestSearchDocsValidationErrors:
     """Tests for search_docs validation errors (lines 157-168, 171-174)."""
 
-    def test_search_docs_empty_query_validation(self):
+    @pytest.mark.asyncio
+    async def test_search_docs_empty_query_validation(self):
         """Test search_docs with empty query validation."""
         with pytest.raises(ValueError, match="Query cannot be empty"):
-            search_docs.fn("", "/test")
+            await search_docs.fn("", "/test")
 
-    def test_search_docs_query_sanitization(self):
+    @pytest.mark.asyncio
+    async def test_search_docs_query_sanitization(self):
         """Test search_docs input sanitization."""
         with patch("doc_server.mcp_server.get_hybrid_search") as _mock_search:
             # Test with potentially problematic input
             query = "test\x00query\x00with\x00nulls"
 
-            result = search_docs.fn(query, "/test")
+            result = await search_docs.fn(query, "/test")
 
             # Should handle null bytes gracefully
             assert isinstance(result, list)
 
-    def test_search_docs_handles_search_service_errors(self):
+    @pytest.mark.asyncio
+    async def test_search_docs_handles_search_service_errors(self):
         """Test search_docs handles search service errors."""
         with patch("doc_server.mcp_server.get_hybrid_search") as mock_search:
             mock_search.side_effect = Exception("Search service unavailable")
@@ -929,13 +975,14 @@ class TestSearchDocsValidationErrors:
             with pytest.raises(
                 RuntimeError, match="Search failed: Search service unavailable"
             ):
-                search_docs.fn("test query", "/test")
+                await search_docs.fn("test query", "/test")
 
 
 class TestListLibrariesCollectionErrors:
     """Tests for list_libraries collection processing errors (lines 308-311)."""
 
-    def test_list_libraries_collection_metadata_errors(self):
+    @pytest.mark.asyncio
+    async def test_list_libraries_collection_metadata_errors(self):
         """Test list_libraries with collection metadata errors."""
         with patch("doc_server.mcp_server.get_vector_store") as mock_store:
             # Mock collections with problematic metadata
@@ -951,14 +998,15 @@ class TestListLibrariesCollectionErrors:
                 }
             ]
 
-            result = list_libraries.fn()
+            result = await list_libraries.fn()
 
             # Should handle missing metadata gracefully
             assert isinstance(result, list)
             if result:  # If any results were returned
                 assert "library_id" in result[0]
 
-    def test_list_libraries_handles_list_collections_failure(self):
+    @pytest.mark.asyncio
+    async def test_list_libraries_handles_list_collections_failure(self):
         """Test list_libraries when list_collections fails."""
         with patch("doc_server.mcp_server.get_vector_store") as mock_store:
             mock_store.return_value.list_collections.side_effect = Exception(
@@ -969,31 +1017,34 @@ class TestListLibrariesCollectionErrors:
             with pytest.raises(
                 RuntimeError, match="Failed to list libraries: Collection access failed"
             ):
-                list_libraries.fn()
+                await list_libraries.fn()
 
 
 class TestRemoveLibraryInvalidID:
     """Tests for remove_library with invalid ID (lines 341-348)."""
 
-    def test_remove_library_empty_id(self):
+    @pytest.mark.asyncio
+    async def test_remove_library_empty_id(self):
         """Test remove_library with empty library ID."""
         # Should raise ValueError for empty ID
         with pytest.raises(
             ValueError, match="Invalid library ID: Input cannot be empty"
         ):
-            remove_library.fn("")
+            await remove_library.fn("")
 
-    def test_remove_library_nonexistent_id(self):
+    @pytest.mark.asyncio
+    async def test_remove_library_nonexistent_id(self):
         """Test remove_library with non-existent library ID."""
         with patch("doc_server.mcp_server.get_vector_store") as mock_store:
             mock_store.return_value.delete_collection.return_value = False
 
-            result = remove_library.fn("/nonexistent")
+            result = await remove_library.fn("/nonexistent")
 
             # Should return False for non-existent library
             assert result is False
 
-    def test_remove_library_handles_service_errors(self):
+    @pytest.mark.asyncio
+    async def test_remove_library_handles_service_errors(self):
         """Test remove_library handles service errors gracefully."""
         with patch("doc_server.mcp_server.get_vector_store") as mock_store:
             mock_store.return_value.delete_collection.side_effect = Exception(
@@ -1004,13 +1055,14 @@ class TestRemoveLibraryInvalidID:
             with pytest.raises(
                 RuntimeError, match="Failed to remove library: Service unavailable"
             ):
-                remove_library.fn("/test")
+                await remove_library.fn("/test")
 
 
 class TestHealthCheckVectorStoreErrors:
     """Tests for health_check with vector store errors (lines 382-399)."""
 
-    def test_health_check_vector_store_connection_error(self):
+    @pytest.mark.asyncio
+    async def test_health_check_vector_store_connection_error(self):
         """Test health_check when vector store has connection errors."""
         import time
 
@@ -1030,13 +1082,14 @@ class TestHealthCheckVectorStoreErrors:
                 },
             }
 
-            result = health_check.fn()
+            result = await health_check.fn()
 
             assert result["status"] == "unhealthy"
             assert "components" in result
             assert result["components"]["vector_store"]["status"] == "unhealthy"
 
-    def test_health_check_vector_store_timeout(self):
+    @pytest.mark.asyncio
+    async def test_health_check_vector_store_timeout(self):
         """Test health_check when vector store times out."""
         import time
 
@@ -1053,13 +1106,14 @@ class TestHealthCheckVectorStoreErrors:
                 },
             }
 
-            result = health_check.fn()
+            result = await health_check.fn()
 
             assert result["status"] == "unhealthy"
             assert "components" in result
             assert result["components"]["vector_store"]["status"] == "unhealthy"
 
-    def test_health_check_embedding_service_errors(self):
+    @pytest.mark.asyncio
+    async def test_health_check_embedding_service_errors(self):
         """Test health_check when embedding service has errors."""
         import time
 
@@ -1079,7 +1133,7 @@ class TestHealthCheckVectorStoreErrors:
                 },
             }
 
-            result = health_check.fn()
+            result = await health_check.fn()
 
             assert result["status"] == "unhealthy"
             assert "components" in result
@@ -1093,7 +1147,8 @@ class TestHealthCheckVectorStoreErrors:
 class TestIngestLibraryCleanupOnFailure:
     """Tests for ingest_library cleanup on failure (lines 617-626)."""
 
-    def test_ingest_library_cleanup_on_git_failure(self):
+    @pytest.mark.asyncio
+    async def test_ingest_library_cleanup_on_git_failure(self):
         """Test ingest_library cleanup when git cloning fails."""
         with patch("doc_server.mcp_server.GitCloner") as mock_git_cloner:
             mock_git_instance = mock_git_cloner.return_value
@@ -1105,9 +1160,10 @@ class TestIngestLibraryCleanupOnFailure:
             with pytest.raises(
                 RuntimeError, match="Ingestion failed: Git clone failed"
             ):
-                ingest_library.fn("https://github.com/test/repo.git", "/test")
+                await ingest_library.fn("https://github.com/test/repo.git", "/test")
 
-    def test_ingest_library_cleanup_on_zip_failure(self):
+    @pytest.mark.asyncio
+    async def test_ingest_library_cleanup_on_zip_failure(self):
         """Test ingest_library cleanup when ZIP extraction fails."""
         with patch("doc_server.mcp_server.ZIPExtractor") as mock_zip_extractor:
             mock_zip_instance = mock_zip_extractor.return_value
@@ -1115,9 +1171,10 @@ class TestIngestLibraryCleanupOnFailure:
 
             # Should raise RuntimeError when ZIP extraction fails
             with pytest.raises(RuntimeError, match="Ingestion failed: Invalid ZIP"):
-                ingest_library.fn("/path/to/file.zip", "/test")
+                await ingest_library.fn("/path/to/file.zip", "/test")
 
-    def test_ingest_library_cleanup_on_vector_store_failure(self):
+    @pytest.mark.asyncio
+    async def test_ingest_library_cleanup_on_vector_store_failure(self):
         """Test ingest_library cleanup when vector store operations fail."""
         with (
             patch("doc_server.mcp_server.GitCloner") as mock_git_cloner,
@@ -1150,23 +1207,26 @@ class TestIngestLibraryCleanupOnFailure:
             with pytest.raises(
                 RuntimeError, match="Ingestion failed: Vector store error"
             ):
-                ingest_library.fn("https://github.com/test/repo.git", "/test")
+                await ingest_library.fn("https://github.com/test/repo.git", "/test")
 
-    def test_ingest_library_handles_invalid_source(self):
+    @pytest.mark.asyncio
+    async def test_ingest_library_handles_invalid_source(self):
         """Test ingest_library with invalid source type."""
         # Should raise RuntimeError when source type is invalid
         with pytest.raises(
             RuntimeError, match="Ingestion failed: Local path does not exist"
         ):
-            ingest_library.fn("invalid://source", "/test")
+            await ingest_library.fn("invalid://source", "/test")
 
-    def test_ingest_library_handles_validation_errors(self):
+    @pytest.mark.asyncio
+    async def test_ingest_library_handles_validation_errors(self):
         """Test ingest_library with validation errors."""
         # Test with invalid library_id
         with pytest.raises(ValueError, match="Invalid input: Input cannot be empty"):
-            ingest_library.fn("https://github.com/test/repo.git", "")
+            await ingest_library.fn("https://github.com/test/repo.git", "")
 
-    def test_validate_server_logs_validation_attempt(self):
+    @pytest.mark.asyncio
+    async def test_validate_server_logs_validation_attempt(self):
         """Test that validate_server logs the validation attempt."""
         from doc_server.mcp_server import validate_server
 
@@ -1174,7 +1234,7 @@ class TestIngestLibraryCleanupOnFailure:
             with patch("doc_server.mcp_server.logger") as mock_logger:
                 mock_validate.return_value = {"status": "healthy"}
 
-                validate_server.fn()
+                await validate_server.fn()
 
                 # Verify logging calls
                 mock_logger.info.assert_any_call("Server validation requested")

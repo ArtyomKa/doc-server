@@ -17,7 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY doc_server/ ./doc_server/
-COPY config.py ./
 
 # Create data directories
 RUN mkdir -p /data

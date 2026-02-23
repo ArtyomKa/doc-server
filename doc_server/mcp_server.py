@@ -15,6 +15,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from .api_client import APIClient
 from .config import settings
 from .ingestion.document_processor import DocumentProcessor
 from .ingestion.file_filter import FileFilter
@@ -33,6 +34,27 @@ from .search.vector_store import get_vector_store
 # Configure structured logging
 configure_structlog()
 logger = get_logger(__name__)
+
+
+def get_api_client() -> APIClient:
+    """
+    Get an API client instance for remote mode communication.
+
+    Returns:
+        APIClient configured with backend settings
+
+    Raises:
+        ValueError: If mode is not 'remote' or backend is not configured
+    """
+    if settings.mode != "remote":
+        raise ValueError("API client only available in remote mode")
+
+    return APIClient(
+        base_url=settings.backend_url,
+        api_key=settings.backend_api_key,
+        timeout=settings.backend_timeout,
+        verify_ssl=settings.backend_verify_ssl,
+    )
 
 
 @dataclass
@@ -128,7 +150,9 @@ def _convert_search_result(result: Any) -> DocumentResult:
 
 
 @mcp.tool
-def search_docs(query: str, library_id: str, limit: int = 10) -> list[dict[str, Any]]:
+async def search_docs(
+    query: str, library_id: str, limit: int = 10
+) -> list[dict[str, Any]]:
     """
     Search through ingested documentation.
 
@@ -179,6 +203,34 @@ def search_docs(query: str, library_id: str, limit: int = 10) -> list[dict[str, 
             query_preview=query[:100] + "..." if len(query) > 100 else query,
         )
 
+        # Use remote backend if mode is remote
+        if settings.mode == "remote":
+            try:
+                async with get_api_client() as client:
+                    results = await client.search(
+                        query=query,
+                        library_id=normalized_library_id,
+                        limit=limit,
+                    )
+                    return [
+                        {
+                            "content": r.content,
+                            "file_path": r.file_path,
+                            "library_id": normalized_library_id,
+                            "relevance_score": r.score,
+                            "metadata": r.metadata,
+                        }
+                        for r in results
+                    ]
+            except Exception as e:
+                logger.error(
+                    "Remote search failed",
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
+                raise RuntimeError(f"Remote search failed: {e}") from e
+
+        # Local mode - use hybrid search
         try:
             # Get hybrid search service
             search = get_hybrid_search()
@@ -279,7 +331,7 @@ def _sanitize_input(input_str: str, max_length: int = 1000) -> str:
 
 
 @mcp.tool
-def list_libraries() -> list[dict[str, Any]]:
+async def list_libraries() -> list[dict[str, Any]]:
     """
     List all available libraries that have been ingested.
 
@@ -292,6 +344,26 @@ def list_libraries() -> list[dict[str, Any]]:
     """
     logger.info("Listing all libraries")
 
+    # Use remote backend if mode is remote
+    if settings.mode == "remote":
+        try:
+            async with get_api_client() as client:
+                libraries = await client.list_libraries()
+                return [
+                    {
+                        "library_id": lib.library_id,
+                        "collection_name": lib.library_id.lstrip("/").replace("/", "-"),
+                        "document_count": lib.document_count,
+                        "embedding_model": "unknown",
+                        "created_at": lib.created_at or 0.0,
+                    }
+                    for lib in libraries
+                ]
+        except Exception as e:
+            logger.error(f"Remote list libraries failed: {e}", exc_info=True)
+            raise RuntimeError(f"Failed to list libraries: {e}") from e
+
+    # Local mode
     try:
         vector_store = get_vector_store()
         collections = vector_store.list_collections()
@@ -322,7 +394,7 @@ def list_libraries() -> list[dict[str, Any]]:
 
 
 @mcp.tool
-def remove_library(library_id: str) -> bool:
+async def remove_library(library_id: str) -> bool:
     """
     Remove a library from the index and delete all its documents.
 
@@ -352,6 +424,23 @@ def remove_library(library_id: str) -> bool:
 
     logger.info(f"Removing library: {normalized_library_id}")
 
+    # Use remote backend if mode is remote
+    if settings.mode == "remote":
+        try:
+            async with get_api_client() as client:
+                deleted = await client.remove_library(normalized_library_id)
+                if deleted:
+                    logger.info(
+                        f"Library '{normalized_library_id}' removed successfully"
+                    )
+                else:
+                    logger.info(f"Library '{normalized_library_id}' did not exist")
+                return deleted
+        except Exception as e:
+            logger.error(f"Remote remove library failed: {e}", exc_info=True)
+            raise RuntimeError(f"Failed to remove library: {e}") from e
+
+    # Local mode
     try:
         vector_store = get_vector_store()
         deleted = vector_store.delete_collection(normalized_library_id)
@@ -369,7 +458,7 @@ def remove_library(library_id: str) -> bool:
 
 
 @mcp.tool
-def health_check() -> dict[str, Any]:
+async def health_check() -> dict[str, Any]:
     """
     Check the health status of the doc-server.
 
@@ -382,6 +471,27 @@ def health_check() -> dict[str, Any]:
     """
     logger.info("Health check requested")
 
+    # Use remote backend if mode is remote
+    if settings.mode == "remote":
+        try:
+            async with get_api_client() as client:
+                health_result = await client.health_check()
+                return {
+                    "status": health_result.status,
+                    "version": "1.0.0",
+                    "timestamp": health_result.timestamp or time.time(),
+                    "components": health_result.components,
+                }
+        except Exception as e:
+            logger.error(f"Remote health check failed: {e}", exc_info=True)
+            return {
+                "status": "unhealthy",
+                "version": "1.0.0",
+                "timestamp": time.time(),
+                "error": str(e),
+            }
+
+    # Local mode
     try:
         health = get_health_status()
         logger.info(
@@ -403,7 +513,7 @@ def health_check() -> dict[str, Any]:
 
 
 @mcp.tool
-def validate_server() -> dict[str, Any]:
+async def validate_server() -> dict[str, Any]:
     """
     Validate server dependencies and configuration.
 
@@ -416,6 +526,25 @@ def validate_server() -> dict[str, Any]:
     """
     logger.info("Server validation requested")
 
+    # Use remote backend if mode is remote
+    if settings.mode == "remote":
+        try:
+            async with get_api_client() as client:
+                health_result = await client.health_check()
+                return {
+                    "status": health_result.status,
+                    "timestamp": health_result.timestamp or time.time(),
+                    "components": health_result.components,
+                }
+        except Exception as e:
+            logger.error(f"Remote validation failed: {e}", exc_info=True)
+            return {
+                "status": "unhealthy",
+                "timestamp": time.time(),
+                "error": str(e),
+            }
+
+    # Local mode
     try:
         validation = validate_startup()
         logger.info(
@@ -433,7 +562,7 @@ def validate_server() -> dict[str, Any]:
 
 
 @mcp.tool
-def ingest_library(source: str, library_id: str) -> dict[str, Any]:
+async def ingest_library(source: str, library_id: str) -> dict[str, Any]:
     """
     Ingest documentation from a git repository, ZIP archive, or local folder.
 
@@ -470,6 +599,25 @@ def ingest_library(source: str, library_id: str) -> dict[str, Any]:
         f"Ingesting library: source='{sanitized_source[:100]}...', library_id={normalized_library_id}"
     )
 
+    # Use remote backend if mode is remote
+    if settings.mode == "remote":
+        try:
+            async with get_api_client() as client:
+                result = await client.ingest(
+                    source=sanitized_source,
+                    library_id=normalized_library_id,
+                )
+                return {
+                    "success": result.success,
+                    "documents_ingested": result.documents_ingested,
+                    "library_id": result.library_id,
+                    "source_type": "remote",
+                }
+        except Exception as e:
+            logger.error(f"Remote ingest failed: {e}", exc_info=True)
+            raise RuntimeError(f"Ingestion failed: {e}") from e
+
+    # Local mode - process locally
     # Track temporary resources for cleanup
     temp_dir: Path | None = None
     extraction_path: Path | None = None
