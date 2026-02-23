@@ -1,9 +1,10 @@
 """Tests for API Server module."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from doc_server.api_server import (
     HealthResponse,
@@ -33,10 +34,10 @@ class TestSearchRequest:
 
     def test_search_request_limit_validation(self):
         """Test SearchRequest limit validation."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SearchRequest(query="test", library_id="/test", limit=0)
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SearchRequest(query="test", library_id="/test", limit=101)
 
 
